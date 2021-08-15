@@ -316,6 +316,24 @@ def cmd_run(command):
     
     return(raw_data)
 
+def cmd_live(command):
+    process = subprocess.Popen(command, stdout=subprocess.PIPE)
+    for line in iter(process.stdout.readline, b''):
+        yield(line)
+        
+def notify(msg):
+    cmd = f"notify-send Poodillion '{msg}'"
+    os.system(cmd)
+
+#Install/build root
+def run_setup():
+    cmd = f"/usr/bin/pkexec '{script_path}/bin/build_root.sh'"
+    msg = "Running setup for the first time... \nThis will take about 10 minutes"
+    notify(msg)
+    print(msg)
+    os.system(cmd)
+
+    
 
 #Setup tty
 ###############################################
@@ -325,7 +343,13 @@ open_tty()
 def get_PWD():
     global BASH_PID
     global chroot_path
+    global script_path
     path = f"{chroot_path}/game/PWD"
+    if not os.path.isfile(path):
+        #This should only happen if the main chroot is missing.
+        print("Need to run setup script!")
+        run_setup()
+        
     with open(path) as fh:
         return_data  = fh.readline().strip()
     return(return_data)
@@ -356,9 +380,12 @@ def get_tty_out():
     #return("")
     return([shell_prompt,std_out])
 
+#get_PWD has a check if the chroot is setup
 print(get_PWD())
 ###############################################
 #Run Init bash comand
+msg = "Poodillion needs root access to isolate itself in a systemd container."
+notify(msg)
 bash_run(startup_CMD, -1)
 #Set prompt
 cmd = f'PS1="{prompt_raw}"'

@@ -28,6 +28,8 @@ chown $user:$user /game
 echo 'PROMPT_COMMAND="echo \$PWD > /game/PWD"' > /home/$user/.bashrc
 echo 'PROMPT_COMMAND="echo \$PWD > /game/PWD"' >> /etc/bash.bashrc
 #Set init PWD
-echo "/home/$user" > /tmp/PWD
+echo "/home/$user" > /game/PWD
+chown $user:$user /game/PWD
+#Setup bashrc (Seems to not be working)
 chown $user:$user /home/$user/.bashrc
 chmod 755 /home/$user/.bashrc

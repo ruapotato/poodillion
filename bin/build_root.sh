@@ -2,21 +2,37 @@
 #sudo apt install debootstrap
 cd "$(dirname "$0")"
 
-shell_root=/home/$SUDO_USER/.poodillion_root
-if [ -d "$shell_root" ]; then
-    echo "$shell_root found!"
-    read -p "Would you like to rebuild $shell_root? " -n 1 -r
-    echo    # (optional) move to a new line
-    if [[ ! $REPLY =~ ^[Yy]$ ]]
-    then
-        echo "Exiting"
-        exit 1
-    else
-        echo "Cleaning up old root..."
-        rm -r $shell_root
-    fi
+if test -z "$SUDO_USER"
+then
+    USER=$(getent passwd $PKEXEC_UID | cut -d: -f1)
+    echo "Skip interface (Running with pkexec)"
+    run_setup="0"
+else
+    USER=$SUDO_USER
+    run_setup="1"
 fi
+shell_root=/home/$USER/.poodillion_root
 
+#Only run setup interface if run with sudo not pkexec
+if [ "$run_setup" -eq "1" ]
+then
+    if [ -d "$shell_root" ]; then
+        echo "$shell_root found!"
+        read -p "Would you like to rebuild $shell_root? " -n 1 -r
+        echo    # (optional) move to a new line
+        if [[ ! $REPLY =~ ^[Yy]$ ]]
+        then
+            echo "Exiting"
+            exit 1
+        else
+            echo "Cleaning up old root..."
+            rm -r $shell_root
+        fi
+    fi
+else
+    #clean up if an old install is around (Run with pkexec)
+    rm -r "$shell_root"
+fi
 
 if [ "aarch64" == $(uname -m) ]
 then
