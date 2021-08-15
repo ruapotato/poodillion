@@ -9,4 +9,7 @@ else
 fi
 echo "User folder in: $USER"
 shell_root=/home/$USER/.poodillion_root
+#unload if needed:
+systemctl stop poodillionroot.scope
+#restart
 systemd-nspawn -D $shell_root --boot --register=no

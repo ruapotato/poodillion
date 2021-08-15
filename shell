@@ -20,6 +20,7 @@
 
 #sudo apt install python3-pygame python3-pyte
 import subprocess
+import random
 import os
 import pygame
 from bash_hook import *
@@ -215,6 +216,8 @@ def load_spawner(PWD):
                     #on_enter: frog_guy.png: bob: 100% walk 3: 100% na
                     #every 10: frog_guy.png: son_of_bob_$RAND: 100% walk 3: 50% 5HP
                     when = raw_data[0].strip()
+                    if when == "on_enter":
+                        when = "active"
                     img = f"{script_path}/img/{raw_data[1].strip()}"
                     name = raw_data[2].strip()
                     
@@ -222,7 +225,7 @@ def load_spawner(PWD):
                     #Example data
                     #100% walk 3
                     change_action = action_raw[0].strip("%")
-                    action = action_raw[1]
+                    action = f"{action_raw[1]} {action_raw[2]}"
                     
                     
                     drop_raw = raw_data[4].strip().split(' ')
@@ -232,21 +235,72 @@ def load_spawner(PWD):
                     chance_drop = drop_raw[0].strip("%")
                     drops = drop_raw[1]
                     
+                    start_pos = [display_width-50,int(display_height/random.randint(1,4))]
                     game_actors[name] = {"when":when,
-                                         "img":img,
+                                         "img":pygame.image.load(img).convert(),
                                          "name":name,
                                          "action_chance":change_action,
                                          "action":action,
                                          "drop_chance":chance_drop,
-                                         "drops":drops}
+                                         "drops":drops,
+                                         "pos":start_pos,
+                                         "lastPos": copy.deepcopy(start_pos)}
         
+
+def draw_npc():
+    global game_actors
+    global gameDisplay
+    for player_name in game_actors:
+        status = game_actors[player_name]['when']
+        if status == "active":
+            print("draw NPC")
+            #Clear old
+            img = game_actors[player_name]['img']
+            pos = game_actors[player_name]['lastPos']
+            pygame.draw.rect(gameDisplay,(255,255,255),(pos[0],pos[1],img.get_width(),img.get_height()))
+            #Draw new
+            pos = game_actors[player_name]['pos']
+            gameDisplay.blit(img, pos)
+            
+
+def did_it_happen(chance):
+    chance = int(chance)
+    rand_int = random.randint(1,100)
+    if rand_int <= chance:
+        return(True)
+    return(False)
 
 def update_game():
     global gameDisplay
-    global game_actors
-    if game_actors != {}:
-        print(game_actors)
+    global player_xy
     
+    for player_name in game_actors:
+        status = game_actors[player_name]['when']
+        if status == "active":
+            print("Active NPC")
+            pos = game_actors[player_name]['pos']
+            action = game_actors[player_name]['action']
+            action_chance = game_actors[player_name]['action_chance']
+            if did_it_happen(action_chance):
+                if action.startswith("walk"):
+                    #check if we are hit
+                    if (pos[0] - player_xy[0]) < 25 and (pos[1] - player_xy[1]) < 25:
+                        print("Hit")
+                        continue
+                    speed = int(action.split(" ")[-1])
+                    x_delta = pos[0] - player_xy[0]
+                    y_delta = pos[1] - player_xy[1]
+                    
+                    total_delta = x_delta + y_delta
+                    x_speed = (speed/total_delta)*x_delta
+                    y_speed = (speed/total_delta)*y_delta
+                    
+                    game_actors[player_name]['lastPos'] = copy.deepcopy(game_actors[player_name]['pos'])
+                    game_actors[player_name]['pos'][0] -= x_speed
+                    game_actors[player_name]['pos'][1] -= y_speed
+                    print(f"Moving with speed of {speed} {x_speed} {y_speed}")
+                    
+            print(pos)
 
 def main_interface():
     #Globals needed by the reset call
@@ -356,6 +410,7 @@ def main_interface():
         #power_bar_pos = [display_width/2-13,577]
         #button("",power_bar_pos[0],power_bar_pos[1],25,75,powered_bar_color,quit)
         update_game()
+        draw_npc()
         #print("Tick")
         pygame.display.update()
         clock.tick(6)
