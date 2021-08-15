@@ -1,29 +1,20 @@
-# README #
+# INSTALL #
+========
+* sudo apt install debootstrap systemd-container python3-pygame python3-pyte
 
-This README would normally document whatever steps are necessary to get your application up and running.
+### setup root ###
+===========
+* sudo ./bin/build_root.sh
 
-### What is this repository for? ###
 
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+### Run game ###
+=========
+* ./shell
 
-### How do I get set up? ###
 
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
+### Test shell ###
+===========
+* sudo ./bin/run
 
-### Contribution guidelines ###
 
-* Writing tests
-* Code review
-* Other guidelines
-
-### Who do I talk to? ###
-
-* Repo owner or admin
-* Other community or team contact
+* GPL3

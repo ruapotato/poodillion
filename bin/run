@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# apt-get install systemd-container
+if test -z "$SUDO_USER"
+then
+    USER=$(getent passwd $PKEXEC_UID | cut -d: -f1)
+else
+    USER=$SUDO_USER
+fi
+echo "User folder in: $USER"
+shell_root=/home/$USER/.a_shell_of_a_thing_root
+systemd-nspawn -D $shell_root --boot

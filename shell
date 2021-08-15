@@ -1,0 +1,370 @@
+#!/usr/bin/python3
+#hardware GPL3
+#Copyright (C) 2021 David Hamner
+
+#This program is free software: you can redistribute it and/or modify
+#it under the terms of the GNU General Public License as published by
+#the Free Software Foundation, either version 3 of the License, or
+#(at your option) any later version.
+
+#This program is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#GNU General Public License for more details.
+
+#You should have received a copy of the GNU General Public License
+#along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+#This program gathers helpful logs for debuging issues and removes hardware IDs and user data.
+#This is an open reimplementation of a supportconfig like project.
+
+#sudo apt install python3-pygame python3-pyte
+import subprocess
+import os
+import pygame
+from bash_hook import *
+
+script_path = os.path.dirname(os.path.realpath(__file__))
+chroot_path = os.path.expanduser("~/.a_shell_of_a_thing_root")
+
+display_width = int(720/2)
+display_height = int(860/2)
+clock = pygame.time.Clock()
+
+startup_CMD = f"pkexec {script_path}/bin/run"
+prompt_size = 80 #I can't seem to change this in pyte
+prompt_raw = "player@???:~$ "
+fount_size = int(display_width/prompt_size)#(prompt_size - len(prompt_raw))
+fount_size = fount_size * 4
+
+#Needed for the Librem 5!
+#X11_DISPLAY = ":0"
+#os.environ['DISPLAY'] = X11_DISPLAY
+
+
+def button(msgs,x,y,w,h,ic,action=None):
+    mouse = pygame.mouse.get_pos()
+    click = pygame.mouse.get_pressed()
+    #print(click)
+    pygame.draw.rect(gameDisplay, ic,(x,y,w,h))
+    if x+w > mouse[0] > x and y+h > mouse[1] > y:
+        if click[0] == 1 and action != None:
+            action()         
+    
+    offset = 1
+    msgs = msgs.split("\n")
+    total_msgs = len(msgs)
+    dist_apart = int(h / total_msgs)
+    for msg in msgs:
+        smallText = pygame.font.SysFont("comicsansms",20)
+        textSurf, textRect = text_objects(msg, smallText)
+        if total_msgs == 1:
+            textRect.center = ( (x+int(textRect.width/2) + 5), (y+int(h/2)) )
+        else:
+            textRect.center = ( (x+int(textRect.width/2) + 5), (y+(dist_apart*offset) - 10) )
+            offset += 1
+        gameDisplay.blit(textSurf, textRect)
+
+
+def value_bar(x,y,value, from_right=True, size=10, px_multiplayer=1.6, hide_text=False):
+    value_txt = f"{value:.1f}%"
+    
+    #set bar size to 160 px (1.6 times 100%)
+    value *= px_multiplayer
+    
+    if from_right:
+        #Grow from right
+        x = x - value
+    
+    pygame.draw.rect(gameDisplay, pygame.color.Color("black"),(x,y,value,size))
+    if not hide_text:
+        smallText = pygame.font.SysFont("comicsansms",15)
+        textSurf, textRect = text_objects(value_txt, smallText, color="white")
+        textRect.center = ( (x+int(value/2)), (y+int(size/2)) )
+        gameDisplay.blit(textSurf, textRect)
+
+def quit():
+    pygame.quit()
+    exit()
+
+def reset_clip():
+    global selected_crop
+    global pos1
+    global pos2
+    selected_crop = False
+    pos1 = ()
+    pos2 = ()
+
+def text_objects(text, font, color="Black"):
+    textSurface = font.render(text, True, pygame.color.Color(color))
+    return textSurface, textSurface.get_rect()
+
+def draw_prompt(prompt_text):
+    global text_font
+    global background_color
+    #clear
+    pygame.draw.rect(gameDisplay,background_color,(0,display_height-15,display_width,15))
+    #Draw
+    TextRect = text_font.render(prompt_text, True, (255, 255, 255))
+    gameDisplay.blit(TextRect, (0,display_height-12))
+
+def action_cd(new_xy, exit_right=True, reset_player_pos=True):
+    global gameDisplay
+    global player_xy
+    global player_image
+    num_frames = 30
+    fps = 30
+    player_img_height = 90
+    player_start = copy.deepcopy(player_xy)
+    space_to_move_right = (display_width - player_xy[0])/num_frames
+    space_to_move_up_down = ((new_xy-player_img_height/2) - player_xy[1])/num_frames
+    if not exit_right:
+        space_to_move_right = space_to_move_right * -1
+        space_to_move_up_down = 0
+        num_frames = 10
+    for i in range(0,num_frames):
+        #clear old player
+        pygame.draw.rect(gameDisplay,(255,255,255),(player_xy[0],player_xy[1],50,90))
+        player_xy[0] = int(player_xy[0] + space_to_move_right)
+        player_xy[1] = int(player_xy[1] + space_to_move_up_down)
+        gameDisplay.blit(player_image, player_xy)
+        #print(player_xy)
+        pygame.display.update()
+        clock.tick(fps)
+    if reset_player_pos:
+        player_xy = player_start
+
+def draw_doors():
+    global gameDisplay
+    global PWD
+    
+    chroot_PWD = chroot_path + PWD
+    print(chroot_PWD)
+    dirs_next_door = []
+    dir_pos = {}
+    try:
+        files_and_dirs = os.listdir(chroot_PWD)
+    except PermissionError:
+        files_and_dirs = []
+    for file_or_dir in files_and_dirs:
+        file_or_dir = chroot_PWD + "/" + file_or_dir
+        if os.path.isdir(file_or_dir):
+            if not os.path.islink(file_or_dir):
+                print(file_or_dir)
+                if chroot_PWD == "/":
+                    short_name = f"/{file_or_dir.split(chroot_PWD)[-1]}"
+                elif file_or_dir.startswith(chroot_PWD):
+                    short_name = f".{file_or_dir.split(chroot_PWD)[-1]}"
+                
+                else:
+                    short_name = file_or_dir
+                dirs_next_door.append(short_name)
+    
+    #dirs_next_door=["/home","/proc"]
+    num_dir_door = len(dirs_next_door)
+    print(num_dir_door)
+    
+    size_on_right = display_height - 60
+    space_per_door = int(size_on_right/(num_dir_door +1))
+    #TODO remove this and fix the math
+    if num_dir_door == 1:
+        offset = -10
+    elif num_dir_door > 20:
+        offset = 40
+    elif num_dir_door > 4:
+        offset = 15
+    else:
+        offset = 0
+        
+    for i in range(1,num_dir_door+1):
+        pos = int((space_per_door*i) + offset)
+        dir_pos[dirs_next_door[i-1]] = pos + int(space_per_door/4)
+        pygame.draw.rect(gameDisplay,(255,255,255),(display_width-15,pos,15,int(space_per_door/2)))
+        print(pos)
+    for file_name in dir_pos:
+        
+        #if file_name.startswith(PWD):
+            #file_text = f".{file_name.split(PWD)[-1]}"
+        #else:
+            #file_text = file_name
+        TextRect = text_font.render(file_name, True, (0, 0, 0))
+        pos = dir_pos[file_name]
+        gameDisplay.blit(TextRect, (display_width - (len(file_name)*6),pos - 6))
+    return(dir_pos)
+
+def main_interface():
+    #Globals needed by the reset call
+    global selected_crop
+    global text_font
+    global background_color
+    global player_image
+    global player_xy
+    global PWD
+    running = True
+    
+    background_color = pygame.color.Color(25,25,25)
+    prompt_text = prompt_raw
+    std_out = ""
+    num_dir_door = 0
+    player_xy = [50, int(display_height/2)-45]
+    player_image = pygame.image.load(f"{script_path}/img/player.png").convert()
+    dir_pos = {}
+    #img = pygame.image.load(image_file_to_display)
+    #img = pygame.transform.scale(img, (display_width, display_height))
+    
+
+    PWD = get_PWD()
+    rendered_path = None
+
+    while running:
+        #look for new events
+        for event in pygame.event.get():
+            #print(event)
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+            if event.type == pygame.KEYDOWN:
+                key = chr(event.key)
+                composit_process(key)
+                print(key)
+                #Update prompt and std_out
+                time.sleep(0.01)
+                std_raw = get_tty_out()
+                prompt_text = std_raw[0]
+                std_out = std_raw[1]
+                print(std_out)
+                #Update PWD
+                PWD = get_PWD()
+                #print(PWD)
+                draw_prompt(prompt_text)
+        
+
+        #redraw room
+        if rendered_path != PWD:
+            #Play cd action
+            short_pwd = f"./{PWD.split('/')[-1]}"
+            if short_pwd in dir_pos:
+                action_cd(dir_pos[short_pwd])
+            elif rendered_path != None:
+                action_cd(player_xy[0], exit_right=False)
+
+            #Update rendered path
+            rendered_path = PWD
+            
+            #Clear
+            gameDisplay.fill(background_color)
+            
+            #draw main room
+            pygame.draw.rect(gameDisplay,(255,255,255),(15,15,display_width-30,display_height-30))
+            draw_prompt(prompt_text)
+            
+            #draw player
+            gameDisplay.blit(player_image, player_xy)
+            
+            #Draw ../ door
+            if PWD != "/":
+                pos = int(display_height/2)
+                pygame.draw.rect(gameDisplay,(255,255,255),(0,pos,15,30))
+                TextRect = text_font.render("../", True, (0, 0, 0))
+                gameDisplay.blit(TextRect,(10,pos+8))
+            
+            #Draw dirs in room as doors
+            dir_pos = draw_doors()
+            
+            #load spawner
+            #draw badguys
+        
+        
+        #read_clip_button_text = prompt_text
+        #read_clip_button_pos = [display_width- 115,0]
+        #read_clip_button_size = [105,30]
+        #blue_color = pygame.color.Color("blue")
+        #button(read_clip_button_text,read_clip_button_pos[0],read_clip_button_pos[1],read_clip_button_size[0],read_clip_button_size[1],blue_color,blank)
+    
+        #button("",sidebar_pos[0],sidebar_pos[1],20,300,lockdown_color,quit)
+        
+        
+        #Draw keyboard info
+        #keyboard_text = "(EN) Keybaord"
+        #keyboard_pos = [display_width- 100,590]
+        #keyboard_size = [int(display_width/3.5),70]
+        #button(keyboard_text,keyboard_pos[0],keyboard_pos[1],keyboard_size[0],keyboard_size[1],color,quit)
+        
+        #############################################################################################
+        #Draw is powered bar
+        #############################################################################################
+        #power_bar_pos = [display_width/2-13,577]
+        #button("",power_bar_pos[0],power_bar_pos[1],25,75,powered_bar_color,quit)
+
+        
+        pygame.display.update()
+        clock.tick(6)
+
+#place holder button function
+def blank():
+    print("Blank")
+    return()
+
+def cmd_run(command):
+    command = command.split()
+    try:
+        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        raw_data =  result.stdout.decode()
+        raw_data += result.stderr.decode()
+    except FileNotFoundError:
+        raw_data = "Command Not Found"
+    
+    return(raw_data)
+
+
+#Setup tty
+###############################################
+#Open new virt tty shell
+open_tty()
+
+def get_PWD():
+    global BASH_PID
+    global chroot_path
+    path = f"{chroot_path}/game/PWD"
+    with open(path) as fh:
+        return_data  = fh.readline().strip()
+    return(return_data)
+
+def get_tty_out():
+    try:
+        raw_data = copy.deepcopy(output_data[target_tty])
+    except RuntimeError as E:
+        #retry
+        print("Error reading data...")
+        time.sleep(.02)
+        print(E)
+        return(get_tty_out())
+
+    cmd_text = ""
+    shell_prompt = ""
+    for line_index in raw_data:
+        line = raw_data[line_index]
+        cmd_text = cmd_text + "\n"
+        for col_index in line:
+            char_obj = line[col_index]
+            char_pos = [line_index, col_index]
+            cmd_text = cmd_text + char_obj.data
+    shell_prompt = cmd_text.split("\n")[-1].strip()
+    std_out = cmd_text.split("\n")[:-1]
+    #print(f"New shell: {cmd_text}")
+    #print(cmd_text)
+    #return("")
+    return([shell_prompt,std_out])
+
+print(get_PWD())
+###############################################
+#Run Init bash comand
+bash_run(startup_CMD, -1)
+#Set prompt
+cmd = f'PS1="{prompt_raw}"'
+bash_run(cmd, -1)
+###############################################
+pygame.init()
+text_font = pygame.font.SysFont("comicsansms",fount_size)
+gameDisplay = pygame.display.set_mode((display_width,display_height))
+main_interface()
