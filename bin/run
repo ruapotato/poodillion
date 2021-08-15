@@ -8,5 +8,5 @@ else
     USER=$SUDO_USER
 fi
 echo "User folder in: $USER"
-shell_root=/home/$USER/.a_shell_of_a_thing_root
+shell_root=/home/$USER/.poodillion_root
 systemd-nspawn -D $shell_root --boot

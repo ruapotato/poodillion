@@ -25,7 +25,7 @@ import pygame
 from bash_hook import *
 
 script_path = os.path.dirname(os.path.realpath(__file__))
-chroot_path = os.path.expanduser("~/.a_shell_of_a_thing_root")
+chroot_path = os.path.expanduser("~/.poodillion_root")
 
 display_width = int(720/2)
 display_height = int(860/2)

@@ -2,7 +2,7 @@
 #sudo apt install debootstrap
 cd "$(dirname "$0")"
 
-shell_root=/home/$SUDO_USER/.a_shell_of_a_thing_root
+shell_root=/home/$SUDO_USER/.poodillion_root
 if [ -d "$shell_root" ]; then
     echo "$shell_root found!"
     read -p "Would you like to rebuild $shell_root? " -n 1 -r
