@@ -33,7 +33,7 @@ clock = pygame.time.Clock()
 
 startup_CMD = f"pkexec {script_path}/bin/run"
 prompt_size = 80 #I can't seem to change this in pyte
-prompt_raw = "player@???:~$ "
+prompt_raw = "poodillion@???:~$ "
 fount_size = int(display_width/prompt_size)#(prompt_size - len(prompt_raw))
 fount_size = fount_size * 4
 
@@ -381,7 +381,12 @@ def get_tty_out():
     return([shell_prompt,std_out])
 
 #get_PWD has a check if the chroot is setup
-print(get_PWD())
+PWD_ATM = get_PWD()
+#Make sure to start in /home/poodillion
+if PWD_ATM != "/home/poodillion":
+    path = f"{chroot_path}/game/PWD"
+    with open(path, 'w') as fh:
+        fh.write("/home/poodillion")
 ###############################################
 #Run Init bash comand
 msg = "Poodillion needs root access to isolate itself in a systemd container."
