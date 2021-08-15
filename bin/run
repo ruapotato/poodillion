@@ -9,4 +9,4 @@ else
 fi
 echo "User folder in: $USER"
 shell_root=/home/$USER/.poodillion_root
-systemd-nspawn -D $shell_root --boot
+systemd-nspawn -D $shell_root --boot --register=no

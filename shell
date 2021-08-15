@@ -192,6 +192,62 @@ def draw_doors():
         gameDisplay.blit(TextRect, (display_width - (len(file_name)*6),pos - 6))
     return(dir_pos)
 
+
+def load_spawner(PWD):
+    global chroot_path
+    global game_actors
+    
+    chroot_PWD = chroot_path + PWD
+    possible_spawn_file = f"{chroot_PWD}/.spawner"
+    
+    #Clear out any old spawner data
+    game_actors = {}
+    
+    #If we have a spawner load it
+    if os.path.isfile(possible_spawn_file):
+        with open(possible_spawn_file) as fh:
+            for line in fh.readlines():
+                if line.startswith("#"):
+                    continue
+                if line.startswith("on_enter") or line.startswith("every"):
+                    raw_data = line.split(":")
+                    #Example data
+                    #on_enter: frog_guy.png: bob: 100% walk 3: 100% na
+                    #every 10: frog_guy.png: son_of_bob_$RAND: 100% walk 3: 50% 5HP
+                    when = raw_data[0].strip()
+                    img = f"{script_path}/img/{raw_data[1].strip()}"
+                    name = raw_data[2].strip()
+                    
+                    action_raw = raw_data[3].strip().split(' ')
+                    #Example data
+                    #100% walk 3
+                    change_action = action_raw[0].strip("%")
+                    action = action_raw[1]
+                    
+                    
+                    drop_raw = raw_data[4].strip().split(' ')
+                    #Example data
+                    #["50%", "5HP"]
+                    #["100%", "na"]
+                    chance_drop = drop_raw[0].strip("%")
+                    drops = drop_raw[1]
+                    
+                    game_actors[name] = {"when":when,
+                                         "img":img,
+                                         "name":name,
+                                         "action_chance":change_action,
+                                         "action":action,
+                                         "drop_chance":chance_drop,
+                                         "drops":drops}
+        
+
+def update_game():
+    global gameDisplay
+    global game_actors
+    if game_actors != {}:
+        print(game_actors)
+    
+
 def main_interface():
     #Globals needed by the reset call
     global selected_crop
@@ -200,6 +256,8 @@ def main_interface():
     global player_image
     global player_xy
     global PWD
+    global game_actors
+    
     running = True
     
     background_color = pygame.color.Color(25,25,25)
@@ -209,6 +267,7 @@ def main_interface():
     player_xy = [50, int(display_height/2)-45]
     player_image = pygame.image.load(f"{script_path}/img/player.png").convert()
     dir_pos = {}
+    game_actors = {}
     #img = pygame.image.load(image_file_to_display)
     #img = pygame.transform.scale(img, (display_width, display_height))
     
@@ -240,7 +299,7 @@ def main_interface():
         
 
         #redraw room
-        if rendered_path != PWD:
+        if rendered_path != PWD and PWD != "Loading...":
             #Play cd action
             short_pwd = f"./{PWD.split('/')[-1]}"
             if short_pwd in dir_pos:
@@ -272,6 +331,7 @@ def main_interface():
             dir_pos = draw_doors()
             
             #load spawner
+            load_spawner(PWD)
             #draw badguys
         
         
@@ -295,8 +355,8 @@ def main_interface():
         #############################################################################################
         #power_bar_pos = [display_width/2-13,577]
         #button("",power_bar_pos[0],power_bar_pos[1],25,75,powered_bar_color,quit)
-
-        
+        update_game()
+        #print("Tick")
         pygame.display.update()
         clock.tick(6)
 
@@ -383,10 +443,10 @@ def get_tty_out():
 #get_PWD has a check if the chroot is setup
 PWD_ATM = get_PWD()
 #Make sure to start in /home/poodillion
-if PWD_ATM != "/home/poodillion":
+if PWD_ATM != "Loading...":
     path = f"{chroot_path}/game/PWD"
     with open(path, 'w') as fh:
-        fh.write("/home/poodillion")
+        fh.write("Loading...")
 ###############################################
 #Run Init bash comand
 msg = "Poodillion needs root access to isolate itself in a systemd container."

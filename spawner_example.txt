@@ -1,0 +1,7 @@
+#chown root ./.spawner
+#chmod 644 ./.spawner
+#when:    img:          name: action% action: chance% drops
+on_enter: frog_guy.png: bob: 100% walk 3: 100% na
+every 10: frog_guy.png: son_of_bob_$RAND: 100% walk 3: 50% 5HP
+Help_MSG: rm something!
+Help_when_heath_at: 10

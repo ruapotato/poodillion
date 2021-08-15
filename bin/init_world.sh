@@ -27,6 +27,8 @@ chown $user:$user /game
 
 #Setup prompt and PWD cmd
 echo 'PROMPT_COMMAND="echo \$PWD > /game/PWD"' >> /etc/bash.bashrc
+echo 'echo \$PWD > /game/PWD' >> /etc/bash.bashrc
+
 echo 'PS1="poodillion@???:~$ "' >> /etc/bash.bashrc
 
 #Set init PWD
