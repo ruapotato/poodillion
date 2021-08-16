@@ -412,7 +412,7 @@ def main_interface():
                 pygame.quit()
                 quit()
             if event.type == pygame.KEYDOWN:
-                key = chr(event.key)
+                key = event.unicode
                 composit_process(key)
                 print(key)
                 #Update prompt and std_out
