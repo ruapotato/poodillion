@@ -21,6 +21,7 @@
 #sudo apt install python3-pygame python3-pyte
 import subprocess
 import random
+import string
 import os
 import pygame
 from bash_hook import *
@@ -37,7 +38,7 @@ prompt_size = 80 #I can't seem to change this in pyte
 prompt_raw = "poodillion@???:~$ "
 fount_size = int(display_width/prompt_size)#(prompt_size - len(prompt_raw))
 fount_size = fount_size * 4
-
+npc_imges = {}
 #Needed for the Librem 5!
 #X11_DISPLAY = ":0"
 #os.environ['DISPLAY'] = X11_DISPLAY
@@ -197,6 +198,7 @@ def draw_doors():
 def load_spawner(PWD):
     global chroot_path
     global game_actors
+    global npc_imges
     
     chroot_PWD = chroot_path + PWD
     possible_spawn_file = f"{chroot_PWD}/.spawner"
@@ -219,6 +221,7 @@ def load_spawner(PWD):
                     if when == "on_enter":
                         when = "active"
                     img = f"{script_path}/img/{raw_data[1].strip()}"
+                    npc_imges[img] = pygame.image.load(img).convert()
                     name = raw_data[2].strip()
                     
                     action_raw = raw_data[3].strip().split(' ')
@@ -235,9 +238,9 @@ def load_spawner(PWD):
                     chance_drop = drop_raw[0].strip("%")
                     drops = drop_raw[1]
                     
-                    start_pos = [display_width-50,int(display_height/random.randint(1,4))]
+                    start_pos = [display_width-50,int(display_height/(int(random.randint(1,200)/100)+2))]
                     game_actors[name] = {"when":when,
-                                         "img":pygame.image.load(img).convert(),
+                                         "img":img,
                                          "name":name,
                                          "action_chance":change_action,
                                          "action":action,
@@ -250,12 +253,15 @@ def load_spawner(PWD):
 def draw_npc():
     global game_actors
     global gameDisplay
+    global npc_imges
+    
     for player_name in game_actors:
         status = game_actors[player_name]['when']
         if status == "active":
-            print("draw NPC")
+            #print("draw NPC")
             #Clear old
             img = game_actors[player_name]['img']
+            img = npc_imges[img]
             pos = game_actors[player_name]['lastPos']
             pygame.draw.rect(gameDisplay,(255,255,255),(pos[0],pos[1],img.get_width(),img.get_height()))
             #Draw new
@@ -273,11 +279,32 @@ def did_it_happen(chance):
 def update_game():
     global gameDisplay
     global player_xy
+    global game_tick
     
+    new_NPCs = {}
     for player_name in game_actors:
         status = game_actors[player_name]['when']
+        if status.startswith("every"):
+            print(status)
+            start_on = int(status.split(" ")[-1])
+            print(start_on)
+            print(game_tick)
+            if game_tick % start_on == 0:
+                print("Need to added active!")
+                new_npc = copy.deepcopy(game_actors[player_name])
+                new_npc_name = new_npc['name']
+                if "$RAND" in new_npc_name:
+                    rand_string = ''.join(random.choices(string.ascii_uppercase + string.digits, k = 7))
+                    new_npc_name = new_npc_name.replace("$RAND", rand_string)
+                new_npc['when'] = "active"
+                new_NPCs[new_npc_name] = new_npc
+                print("Yep")
+
+                #game_actors[new_npc_name] = new_npc
+                #print(game_actors)
+                
         if status == "active":
-            print("Active NPC")
+            #print("Active NPC")
             pos = game_actors[player_name]['pos']
             action = game_actors[player_name]['action']
             action_chance = game_actors[player_name]['action_chance']
@@ -298,10 +325,12 @@ def update_game():
                     game_actors[player_name]['lastPos'] = copy.deepcopy(game_actors[player_name]['pos'])
                     game_actors[player_name]['pos'][0] -= x_speed
                     game_actors[player_name]['pos'][1] -= y_speed
-                    print(f"Moving with speed of {speed} {x_speed} {y_speed}")
+                    #print(f"Moving with speed of {speed} {x_speed} {y_speed}")
                     
-            print(pos)
-
+            #print(pos)
+    #add new NPCs outside of above eath loop
+    for new_npc_name in new_NPCs:
+        game_actors[new_npc_name] = new_NPCs[new_npc_name]
 def main_interface():
     #Globals needed by the reset call
     global selected_crop
@@ -311,6 +340,7 @@ def main_interface():
     global player_xy
     global PWD
     global game_actors
+    global game_tick
     
     running = True
     
@@ -322,6 +352,7 @@ def main_interface():
     player_image = pygame.image.load(f"{script_path}/img/player.png").convert()
     dir_pos = {}
     game_actors = {}
+    game_tick = 1
     #img = pygame.image.load(image_file_to_display)
     #img = pygame.transform.scale(img, (display_width, display_height))
     
@@ -386,7 +417,6 @@ def main_interface():
             
             #load spawner
             load_spawner(PWD)
-            #draw badguys
         
         
         #read_clip_button_text = prompt_text
@@ -409,8 +439,15 @@ def main_interface():
         #############################################################################################
         #power_bar_pos = [display_width/2-13,577]
         #button("",power_bar_pos[0],power_bar_pos[1],25,75,powered_bar_color,quit)
+        #Update NPC
         update_game()
+        #Draw NPC
         draw_npc()
+        if game_tick > 1000:
+            game_tick = 2
+        else:
+            game_tick = game_tick + 1
+        print(game_tick)
         #print("Tick")
         pygame.display.update()
         clock.tick(6)
