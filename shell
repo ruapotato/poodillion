@@ -39,6 +39,9 @@ prompt_raw = "poodillion@???:~$ "
 fount_size = int(display_width/prompt_size)#(prompt_size - len(prompt_raw))
 fount_size = fount_size * 4
 npc_imges = {}
+total_life = 100
+player_life = total_life
+
 #Needed for the Librem 5!
 #X11_DISPLAY = ":0"
 #os.environ['DISPLAY'] = X11_DISPLAY
@@ -68,8 +71,8 @@ def button(msgs,x,y,w,h,ic,action=None):
         gameDisplay.blit(textSurf, textRect)
 
 
-def value_bar(x,y,value, from_right=True, size=10, px_multiplayer=1.6, hide_text=False):
-    value_txt = f"{value:.1f}%"
+def value_bar(x,y,value, from_right=True, size=10, px_multiplayer=1.6, hide_text=False, title=""):
+    value_txt = f"{title}:{value}"
     
     #set bar size to 160 px (1.6 times 100%)
     value *= px_multiplayer
@@ -299,16 +302,18 @@ def update_game():
     global game_tick
     global PWD
     global chroot_path
+    global player_life
+    global game_actors
     
     new_NPCs = {}
     chroot_PWD = chroot_path + PWD
     for player_name in game_actors:
         status = game_actors[player_name]['when']
         if status.startswith("every"):
-            print(status)
+            #print(status)
             start_on = int(status.split(" ")[-1])
-            print(start_on)
-            print(game_tick)
+            #print(start_on)
+            #print(game_tick)
             if game_tick % start_on == 0:
                 print("Need to added active!")
                 new_npc = copy.deepcopy(game_actors[player_name])
@@ -326,7 +331,6 @@ def update_game():
                 new_npc['life_file'] = life_file
 
                 new_NPCs[new_npc_name] = new_npc
-                print("Yep")
 
                 #game_actors[new_npc_name] = new_npc
                 #print(game_actors)
@@ -356,6 +360,13 @@ def update_game():
                 if action.startswith("walk"):
                     #check if we are hit
                     if (pos[0] - player_xy[0]) < 25 and (pos[1] - player_xy[1]) < 25:
+                        player_life = player_life - 1
+                        if player_life <= 0:
+                            #Reset
+                            print("Player Dead!")
+                            text = "Better luck next time!"
+                            notify(text)
+                            quit()
                         print("Hit")
                         continue
                     speed = int(action.split(" ")[-1])
@@ -385,6 +396,7 @@ def main_interface():
     global PWD
     global game_actors
     global game_tick
+    global player_life
     
     running = True
     
@@ -462,6 +474,12 @@ def main_interface():
             #load spawner
             load_spawner(PWD)
         
+        #Draw life bar:
+        #clear old
+        pygame.draw.rect(gameDisplay,(255,255,255),(20,20,100,10))
+        #Draw new
+        value_bar(20,20, player_life, from_right=False, size=10, px_multiplayer=1, hide_text=False, title="Life")
+        
         
         #read_clip_button_text = prompt_text
         #read_clip_button_pos = [display_width- 115,0]
@@ -491,7 +509,7 @@ def main_interface():
             game_tick = 2
         else:
             game_tick = game_tick + 1
-        print(game_tick)
+        #print(game_tick)
         #print("Tick")
         pygame.display.update()
         clock.tick(6)
