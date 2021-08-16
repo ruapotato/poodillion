@@ -218,11 +218,16 @@ def load_spawner(PWD):
                     #on_enter: frog_guy.png: bob: 100% walk 3: 100% na
                     #every 10: frog_guy.png: son_of_bob_$RAND: 100% walk 3: 50% 5HP
                     when = raw_data[0].strip()
+                    name = raw_data[2].strip()
+                    life_file = ""
                     if when == "on_enter":
+                        life_file = f"{chroot_PWD}/{name}"
+                        with open(life_file, 'w') as fh:
+                            pass
                         when = "active"
                     img = f"{script_path}/img/{raw_data[1].strip()}"
                     npc_imges[img] = pygame.image.load(img).convert()
-                    name = raw_data[2].strip()
+                    
                     
                     action_raw = raw_data[3].strip().split(' ')
                     #Example data
@@ -247,7 +252,8 @@ def load_spawner(PWD):
                                          "drop_chance":chance_drop,
                                          "drops":drops,
                                          "pos":start_pos,
-                                         "lastPos": copy.deepcopy(start_pos)}
+                                         "lastPos": copy.deepcopy(start_pos),
+                                         "life_file": life_file}
         
 
 def draw_npc():
@@ -276,12 +282,26 @@ def did_it_happen(chance):
         return(True)
     return(False)
 
+def FIRE(pos):
+    global gameDisplay
+    global player_xy
+    fire_pos = [player_xy[0] + 30,player_xy[1] + 10]
+    pygame.draw.line(gameDisplay, (255,0,0), (fire_pos[0], fire_pos[1]), (pos[0], pos[1]), 4)
+    pygame.display.update()
+    
+    clock.tick(6)
+    #Clear line
+    pygame.draw.line(gameDisplay, (255,255,255), (fire_pos[0], fire_pos[1]), (pos[0], pos[1]), 4)
+    
 def update_game():
     global gameDisplay
     global player_xy
     global game_tick
+    global PWD
+    global chroot_path
     
     new_NPCs = {}
+    chroot_PWD = chroot_path + PWD
     for player_name in game_actors:
         status = game_actors[player_name]['when']
         if status.startswith("every"):
@@ -296,7 +316,15 @@ def update_game():
                 if "$RAND" in new_npc_name:
                     rand_string = ''.join(random.choices(string.ascii_uppercase + string.digits, k = 7))
                     new_npc_name = new_npc_name.replace("$RAND", rand_string)
+                
+                new_npc['name'] = new_npc_name
+                life_file = f"{chroot_PWD}/{new_npc_name}"
+                print(life_file)
+                with open(life_file, 'w') as fh:
+                    pass
                 new_npc['when'] = "active"
+                new_npc['life_file'] = life_file
+
                 new_NPCs[new_npc_name] = new_npc
                 print("Yep")
 
@@ -305,6 +333,22 @@ def update_game():
                 
         if status == "active":
             #print("Active NPC")
+            life_file = game_actors[player_name]['life_file']
+            if not os.path.isfile(life_file):
+                print(f"Killed {life_file}")
+                #Setup needed data
+                img = game_actors[player_name]['img']
+                img = npc_imges[img]
+                pos = game_actors[player_name]['lastPos']
+                
+                #Draw laser
+                pygame.draw.rect(gameDisplay,(255,0,0),(pos[0],pos[1],img.get_width(),img.get_height()))
+                FIRE(pos)
+                
+                #clear player
+                pygame.draw.rect(gameDisplay,(255,255,255),(pos[0],pos[1],img.get_width(),img.get_height()))
+                game_actors[player_name]['when'] = "DEAD"
+                continue
             pos = game_actors[player_name]['pos']
             action = game_actors[player_name]['action']
             action_chance = game_actors[player_name]['action_chance']
