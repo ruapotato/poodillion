@@ -445,6 +445,8 @@ def update_game():
                     if drops.endswith("HP"):
                         life_drop = int(drops.strip("HP"))
                         player_life = player_life + life_drop
+                        msg = f"+{life_drop} HP"
+                        display_txt = {msg:10}
                         print(f"Player life: {player_life}")
                     if drops.startswith("unlock"):
                         short_name = drops.split("unlock")[-1]
