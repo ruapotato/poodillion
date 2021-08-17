@@ -38,3 +38,6 @@ chown $user:$user /game/PWD
 echo 'PROMPT_COMMAND="echo \$PWD > /game/PWD"' > /home/$user/.bashrc
 chown $user:$user /home/$user/.bashrc
 chmod 755 /home/$user/.bashrc
+
+#Disable chmod for user poodillion
+mv /usr/bin/chown /root

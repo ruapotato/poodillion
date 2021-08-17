@@ -1,0 +1,23 @@
+#Dynamic FS data
+spawn:/home/poodillion/Desktop
+rooms:5
+depth:20
+
+#Effects every room
+#all     :    when:          img:             name:    %  action:damage:    % drops
+all_rooms:every 20: frog_guy.png: son_of_bob_$RAND: 100% walk 10:     3: 100% na
+
+#Setup locked paths:
+locked:/1
+locked:/2
+locked:/3
+locked:/4
+
+locked:/5/1
+locked:/5/2
+locked:/5/3
+locked:/5/4
+locked:/5/5
+
+#room/5:    when:           img:   name:    %  action:damage:    % drops
+room:/5:on_enter: ball_boss.png: killer: 100% walk 13:     7: 100% unlock/1

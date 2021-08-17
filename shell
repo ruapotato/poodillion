@@ -41,6 +41,10 @@ fount_size = fount_size * 4
 npc_imges = {}
 total_life = 100
 player_life = total_life
+dynamic_fs_levels = {}
+init_text = "Enter your password in the pkexec window\nThen press any key to continue..."
+#                   Text:Time in ticks
+display_txt = {init_text:50}
 
 #Needed for the Librem 5!
 #X11_DISPLAY = ":0"
@@ -144,9 +148,10 @@ def draw_doors():
     global PWD
     
     chroot_PWD = chroot_path + PWD
-    print(chroot_PWD)
+    #print(chroot_PWD)
     dirs_next_door = []
     dir_pos = {}
+    door_color = {}
     try:
         files_and_dirs = os.listdir(chroot_PWD)
     except PermissionError:
@@ -155,7 +160,7 @@ def draw_doors():
         file_or_dir = chroot_PWD + "/" + file_or_dir
         if os.path.isdir(file_or_dir):
             if not os.path.islink(file_or_dir):
-                print(file_or_dir)
+                #print(file_or_dir)
                 if chroot_PWD == "/":
                     short_name = f"/{file_or_dir.split(chroot_PWD)[-1]}"
                 elif file_or_dir.startswith(chroot_PWD):
@@ -167,7 +172,7 @@ def draw_doors():
     
     #dirs_next_door=["/home","/proc"]
     num_dir_door = len(dirs_next_door)
-    print(num_dir_door)
+    #print(num_dir_door)
     
     size_on_right = display_height - 60
     space_per_door = int(size_on_right/(num_dir_door +1))
@@ -184,8 +189,15 @@ def draw_doors():
     for i in range(1,num_dir_door+1):
         pos = int((space_per_door*i) + offset)
         dir_pos[dirs_next_door[i-1]] = pos + int(space_per_door/4)
-        pygame.draw.rect(gameDisplay,(255,255,255),(display_width-15,pos,15,int(space_per_door/2)))
-        print(pos)
+        chroot_sub_path = f"{PWD}/{dirs_next_door[i-1].strip('./')}".replace("//","/")
+        full_path = f"{chroot_path}{chroot_sub_path}"
+        #check if we can access the folder:
+        color = (255,255,255)
+        if not os.access(full_path, os.X_OK):
+            color = (255,50,50)
+        #print(f"Hmmmm {full_path}")
+        pygame.draw.rect(gameDisplay,color,(display_width-15,pos,15,int(space_per_door/2)))
+        #print(pos)
     for file_name in dir_pos:
         
         #if file_name.startswith(PWD):
@@ -197,6 +209,60 @@ def draw_doors():
         gameDisplay.blit(TextRect, (display_width - (len(file_name)*6),pos - 6))
     return(dir_pos)
 
+
+def process_NPC_line(line):
+    global script_path
+    global npc_imges
+    global game_actors
+    global chroot_path
+    global PWD
+    
+    chroot_PWD = chroot_path + PWD
+    
+    raw_data = line.split(":")
+    #Example data
+    ##   when:          img:             name:    % action:damage:    % drops
+    #on_enter: frog_guy.png:              bob: 100% walk 3:     1: 100% na
+    #every 40: frog_guy.png: son_of_bob_$RAND: 100% walk 3:     1:  50% 5HP
+    when = raw_data[0].strip()
+    name = raw_data[2].strip()
+    life_file = ""
+    if when == "on_enter":
+        life_file = f"{chroot_PWD}/{name}"
+        with open(life_file, 'w') as fh:
+            pass
+        when = "active"
+    img = f"{script_path}/img/{raw_data[1].strip()}"
+    npc_imges[img] = pygame.image.load(img).convert()
+    
+    
+    action_raw = raw_data[3].strip().split(' ')
+    #Example data
+    #100% walk 3
+    change_action = action_raw[0].strip("%")
+    action = f"{action_raw[1]} {action_raw[2]}"
+    
+    damage = int(raw_data[4].strip())
+    
+    drop_raw = raw_data[5].strip().split(' ')
+    #Example data
+    #["50%", "5HP"]
+    #["100%", "na"]
+    chance_drop = drop_raw[0].strip("%")
+    drops = drop_raw[1]
+    
+    start_pos = [display_width-50,int(display_height/(int(random.randint(1,200)/100)+2))]
+    game_actors[name] = {"when":when,
+                            "img":img,
+                            "name":name,
+                            "action_chance":change_action,
+                            "action":action,
+                            "damage":damage,
+                            "drop_chance":chance_drop,
+                            "drops":drops,
+                            "pos":start_pos,
+                            "lastPos": copy.deepcopy(start_pos),
+                            "life_file": life_file}
 
 def load_spawner(PWD):
     global chroot_path
@@ -216,47 +282,8 @@ def load_spawner(PWD):
                 if line.startswith("#"):
                     continue
                 if line.startswith("on_enter") or line.startswith("every"):
-                    raw_data = line.split(":")
-                    #Example data
-                    #on_enter: frog_guy.png: bob: 100% walk 3: 100% na
-                    #every 10: frog_guy.png: son_of_bob_$RAND: 100% walk 3: 50% 5HP
-                    when = raw_data[0].strip()
-                    name = raw_data[2].strip()
-                    life_file = ""
-                    if when == "on_enter":
-                        life_file = f"{chroot_PWD}/{name}"
-                        with open(life_file, 'w') as fh:
-                            pass
-                        when = "active"
-                    img = f"{script_path}/img/{raw_data[1].strip()}"
-                    npc_imges[img] = pygame.image.load(img).convert()
+                    process_NPC_line(line)
                     
-                    
-                    action_raw = raw_data[3].strip().split(' ')
-                    #Example data
-                    #100% walk 3
-                    change_action = action_raw[0].strip("%")
-                    action = f"{action_raw[1]} {action_raw[2]}"
-                    
-                    
-                    drop_raw = raw_data[4].strip().split(' ')
-                    #Example data
-                    #["50%", "5HP"]
-                    #["100%", "na"]
-                    chance_drop = drop_raw[0].strip("%")
-                    drops = drop_raw[1]
-                    
-                    start_pos = [display_width-50,int(display_height/(int(random.randint(1,200)/100)+2))]
-                    game_actors[name] = {"when":when,
-                                         "img":img,
-                                         "name":name,
-                                         "action_chance":change_action,
-                                         "action":action,
-                                         "drop_chance":chance_drop,
-                                         "drops":drops,
-                                         "pos":start_pos,
-                                         "lastPos": copy.deepcopy(start_pos),
-                                         "life_file": life_file}
         
 
 def draw_npc():
@@ -295,7 +322,72 @@ def FIRE(pos):
     clock.tick(6)
     #Clear line
     pygame.draw.line(gameDisplay, (255,255,255), (fire_pos[0], fire_pos[1]), (pos[0], pos[1]), 4)
+
+def unlock_door(dir_name):
+    os.chmod(dir_name, 0o777)
+
+def lock_away(dir_name):
+    os.chmod(dir_name, 0o222)
     
+def update_dynamic_fs():
+    global dynamic_fs_levels
+    global PWD
+    global chroot_path
+    global level_data
+    global current_level_base
+    
+    for spawn in dynamic_fs_levels:
+        level_data = dynamic_fs_levels[spawn]
+        first_dir_path = level_data['spawn']
+        max_depth = int(level_data['depth'])
+        num_rooms = int(level_data['rooms'])
+        all_rooms_npc = level_data['all_rooms_npc']
+        #get locked rooms
+        locked_rooms = level_data["locked"]
+        #print(f"This data: {first_dir_path}")
+        start_dir = os.path.dirname(first_dir_path)
+        #print(f"This data: {start_dir}")
+        if PWD == start_dir:
+            #check our start folder is here
+            current_level_base = first_dir_path
+            full_path = f"{chroot_path}{first_dir_path}"
+            if not os.path.isdir(full_path):
+                os.mkdir(full_path)
+        
+        #This is a sub path!
+        elif first_dir_path in PWD:
+            current_level_base = first_dir_path
+            short_path = PWD.split(first_dir_path)[-1]
+            depth = len(short_path.split("/"))-1
+            
+            #setup NPCs
+            for npc_line in all_rooms_npc:
+                print(f"Processng NPC line: {npc_line}")
+                process_NPC_line(npc_line)
+            if short_path in level_data:
+                for npc_line in level_data[short_path]:
+                    process_NPC_line(npc_line)
+            
+            #Build new rooms
+            if depth < max_depth:
+                #create new rooms if needed
+                for room_index in range(1,num_rooms+1):
+                    sub_room_name = f"{short_path}/{room_index}"
+                    full_path = f"{chroot_path}{first_dir_path}{sub_room_name}"
+                    if not os.path.isdir(full_path):
+                        os.mkdir(full_path)
+                        #print(full_path)
+                        #print(short_path)
+                        #print(f"HMMM: {sub_room_name} in {locked_rooms}")
+                        if sub_room_name in locked_rooms:
+                            print(f"Lock away {full_path}")
+                            lock_away(full_path)
+            print(f"TODO Yo {depth}")
+            print(short_path)
+        print(PWD)
+        #for level_item in level_data:
+            #print(f"{level_item}:{level_data[level_item]}")
+
 def update_game():
     global gameDisplay
     global player_xy
@@ -304,11 +396,17 @@ def update_game():
     global chroot_path
     global player_life
     global game_actors
+    global current_level_base
+    global display_txt
     
+    #print(game_actors)
     new_NPCs = {}
     chroot_PWD = chroot_path + PWD
     for player_name in game_actors:
         status = game_actors[player_name]['when']
+        drop_chance = game_actors[player_name]['drop_chance']
+        drops = game_actors[player_name]['drops']
+        damage = game_actors[player_name]['damage']
         if status.startswith("every"):
             #print(status)
             start_on = int(status.split(" ")[-1])
@@ -340,6 +438,22 @@ def update_game():
             life_file = game_actors[player_name]['life_file']
             if not os.path.isfile(life_file):
                 print(f"Killed {life_file}")
+                if did_it_happen(drop_chance):
+                    #examples drops
+                    #5HP
+                    #unlock/1
+                    if drops.endswith("HP"):
+                        life_drop = int(drops.strip("HP"))
+                        player_life = player_life + life_drop
+                        print(f"Player life: {player_life}")
+                    if drops.startswith("unlock"):
+                        short_name = drops.split("unlock")[-1]
+                        msg = f"A door has Opened!\nFind your way to:\n  {current_level_base}{short_name}"
+                        display_txt = {msg:50}
+                        full_path = f"{chroot_path}{current_level_base}{short_name}"
+                        print(f"Unlock: {full_path}")
+                        unlock_door(full_path)
+                
                 #Setup needed data
                 img = game_actors[player_name]['img']
                 img = npc_imges[img]
@@ -360,7 +474,7 @@ def update_game():
                 if action.startswith("walk"):
                     #check if we are hit
                     if (pos[0] - player_xy[0]) < 25 and (pos[1] - player_xy[1]) < 25:
-                        player_life = player_life - 1
+                        player_life = player_life - damage
                         if player_life <= 0:
                             #Reset
                             print("Player Dead!")
@@ -397,6 +511,8 @@ def main_interface():
     global game_actors
     global game_tick
     global player_life
+    global display_txt
+    global redraw_forced
     
     running = True
     
@@ -409,6 +525,7 @@ def main_interface():
     dir_pos = {}
     game_actors = {}
     game_tick = 1
+    redraw_forced = False
     #img = pygame.image.load(image_file_to_display)
     #img = pygame.transform.scale(img, (display_width, display_height))
     
@@ -426,13 +543,13 @@ def main_interface():
             if event.type == pygame.KEYDOWN:
                 key = event.unicode
                 composit_process(key)
-                print(key)
+                #print(key)
                 #Update prompt and std_out
                 time.sleep(0.01)
                 std_raw = get_tty_out()
                 prompt_text = std_raw[0]
                 std_out = std_raw[1]
-                print(std_out)
+                #print(std_out)
                 #Update PWD
                 PWD = get_PWD()
                 #print(PWD)
@@ -440,14 +557,16 @@ def main_interface():
         
 
         #redraw room
-        if rendered_path != PWD and PWD != "Loading...":
+        if (rendered_path != PWD and PWD != "Loading...") or redraw_forced:
+            
             #Play cd action
-            short_pwd = f"./{PWD.split('/')[-1]}"
-            if short_pwd in dir_pos:
-                action_cd(dir_pos[short_pwd])
-            elif rendered_path != None:
-                action_cd(player_xy[0], exit_right=False)
-
+            if not redraw_forced:
+                short_pwd = f"./{PWD.split('/')[-1]}"
+                if short_pwd in dir_pos:
+                    action_cd(dir_pos[short_pwd])
+                elif rendered_path != None:
+                    action_cd(player_xy[0], exit_right=False)
+            
             #Update rendered path
             rendered_path = PWD
             
@@ -468,11 +587,18 @@ def main_interface():
                 TextRect = text_font.render("../", True, (0, 0, 0))
                 gameDisplay.blit(TextRect,(10,pos+8))
             
+            
+            #Don't update logic if redraw if forced
+            if not redraw_forced:
+                #load spawner
+                load_spawner(PWD)
+                
+                #Update dynamic_fs
+                update_dynamic_fs()
+            else:
+                redraw_forced = False
             #Draw dirs in room as doors
             dir_pos = draw_doors()
-            
-            #load spawner
-            load_spawner(PWD)
         
         #Draw life bar:
         #clear old
@@ -480,7 +606,25 @@ def main_interface():
         #Draw new
         value_bar(20,20, player_life, from_right=False, size=10, px_multiplayer=1, hide_text=False, title="Life")
         
-        
+        #Update display text:
+        for message in display_txt:
+            ticks_left = display_txt[message]
+            display_txt[message] = display_txt[message] - 1
+            if ticks_left <= 0:
+                del(display_txt[message])
+                redraw_forced = True
+                break
+            else:
+                #clear
+                pos = [25,45]
+                for line in message.split("\n"):
+                    pygame.draw.rect(gameDisplay,background_color,(pos[0]-5,pos[1]-5,display_width -pos[0]*2 ,20))
+                    #Draw
+                    TextRect = text_font.render(line, True, (255, 255, 255))
+                    gameDisplay.blit(TextRect, (pos[0],pos[1]))
+                    print(f"{message}:{ticks_left}")
+                    pos[1] += 15
+        #print(display_txt)
         #read_clip_button_text = prompt_text
         #read_clip_button_pos = [display_width- 115,0]
         #read_clip_button_size = [105,30]
@@ -547,7 +691,61 @@ def run_setup():
     print(msg)
     os.system(cmd)
 
+
+def load_dynamic():
+    global dynamic_fs_levels
+    global script_path
     
+    path = f'{script_path}/dynamic_fs/'
+
+    files = os.listdir(path)
+    
+    level_files = []
+    for file_name in files:
+        level_path = f"{path}{file_name}"
+        #print(level_path)
+        level_files.append(level_path)
+    
+
+    for level_path in level_files:
+        level_data = {}
+        level_data["locked"] = []
+        level_data["all_rooms_npc"] = []
+        raw_data = open(level_path).readlines()
+        name = ""
+        for level_line in raw_data:
+            if level_line.startswith("#"):
+                continue
+            for easy_load_team in ["spawn", "rooms", "depth"]:
+                if level_line.startswith(easy_load_team):
+                    level_data[easy_load_team] = level_line.split(":")[-1].strip()
+            if level_line.startswith("locked:"):
+                level_data["locked"].append(level_line.split(":")[-1].strip())
+            if level_line.startswith("all_rooms:"):
+                data = level_line.split("all_rooms:")[-1].strip()
+                level_data["all_rooms_npc"].append(data)
+            if level_line.startswith("room:"):
+                data = level_line.split(":")
+                room_path = data[1]
+                spawn_data = level_line.split(f"room:{room_path}:")[-1].strip()
+                if room_path not in level_data:
+                    level_data[room_path] = [spawn_data]
+                else:
+                    level_data[room_path].append(data)
+        
+        name = level_data["spawn"]
+        dynamic_fs_levels[name] = level_data
+        
+    
+    
+###############################################
+#Load in fs level data effects dynamic_fs_levels
+load_dynamic()
+#for spawn in dynamic_fs_levels:
+#    level_data = dynamic_fs_levels[spawn]
+#    for level_item in level_data:
+#        print(f"{level_item}:{level_data[level_item]}")
+#print(dynamic_fs_levels)
 
 #Setup tty
 ###############################################
