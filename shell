@@ -248,8 +248,14 @@ def process_NPC_line(line):
     #Example data
     #["50%", "5HP"]
     #["100%", "na"]
+    #["100%", "msg", "str_part", "str_part]
     chance_drop = drop_raw[0].strip("%")
-    drops = drop_raw[1]
+    if len(drop_raw) > 2:
+        drops = " ".join(drop_raw)[3:].strip()
+        drops = drops.replace("\\n", "\n")
+    else:
+        drops = drop_raw[1]
+    print(f"Setup {drops}")
     
     start_pos = [display_width-50,int(display_height/(int(random.randint(1,200)/100)+2))]
     game_actors[name] = {"when":when,
@@ -336,6 +342,8 @@ def update_dynamic_fs():
     global level_data
     global current_level_base
     
+    print(dynamic_fs_levels)
+    
     for spawn in dynamic_fs_levels:
         level_data = dynamic_fs_levels[spawn]
         first_dir_path = level_data['spawn']
@@ -361,12 +369,35 @@ def update_dynamic_fs():
             depth = len(short_path.split("/"))-1
             
             #setup NPCs
+            #Load data example: all_rooms
             for npc_line in all_rooms_npc:
                 print(f"Processng NPC line: {npc_line}")
                 process_NPC_line(npc_line)
+            #Load data example: room:/3
             if short_path in level_data:
                 for npc_line in level_data[short_path]:
                     process_NPC_line(npc_line)
+            #Load data example: on_path:/1/2
+            for level_object in level_data:
+                if level_object.startswith("*"):
+                    path_to_check = level_object.strip("*")
+                    tmp_level_data = level_data[level_object]
+                    if path_to_check.startswith(short_path):
+                        #print(f"Setting up {level_data}")
+                        for line in tmp_level_data:
+                            process_NPC_line(line)
+            #Load data example: off_path:/1/2
+            for level_object in level_data:
+                if level_object.startswith("-"):
+                    path_to_check = level_object.strip("-")
+                    tmp_level_data = level_data[level_object]
+                    print(f"DEBUG: {short_path} {path_to_check}")
+                    if not path_to_check.startswith(short_path):
+                        print(f"Setting up {tmp_level_data}")
+                        for line in tmp_level_data:
+                            process_NPC_line(line)
+                else:
+                    print(f"Not starting with - {level_object}")
             
             #Build new rooms
             if depth < max_depth:
@@ -382,7 +413,7 @@ def update_dynamic_fs():
                         if sub_room_name in locked_rooms:
                             print(f"Lock away {full_path}")
                             lock_away(full_path)
-            print(f"TODO Yo {depth}")
+            #print(f"TODO Yo {depth}")
             print(short_path)
         print(PWD)
         #for level_item in level_data:
@@ -442,6 +473,10 @@ def update_game():
                     #examples drops
                     #5HP
                     #unlock/1
+                    #msg some string to say
+                    if drops.startswith("msg"):
+                        msg = drops[3:]
+                        display_txt = {msg:50}
                     if drops.endswith("HP"):
                         life_drop = int(drops.strip("HP"))
                         player_life = player_life + life_drop
@@ -734,7 +769,31 @@ def load_dynamic():
                     level_data[room_path] = [spawn_data]
                 else:
                     level_data[room_path].append(data)
-        
+            if level_line.startswith("on_path:"):
+                #Example data
+                #all on path:     when:           img:     name:    %  action:damage:   % drops
+                #on_path:/1/2:on_enter: ball_boss.png: the_lost: 100% walk 10:     7: 70% msg Yo. 
+
+                data = level_line.split(":")
+                room_path = f"*{data[1]}"
+                spawn_data = ":".join(data[2:]).strip()
+                if room_path not in level_data:
+                    level_data[room_path] = [spawn_data]
+                else:
+                    level_data[room_path].append(data)
+            
+            if level_line.startswith("off_path:"):
+                #Example data
+                #all on path:     when:           img:     name:    %  action:damage:   % drops
+                #on_path:/1/2:on_enter: ball_boss.png: the_lost: 100% walk 10:     7: 70% msg Yo. 
+
+                data = level_line.split(":")
+                bad_room_path = f"-{data[1]}"
+                spawn_data = ":".join(data[2:]).strip()
+                if bad_room_path not in level_data:
+                    level_data[bad_room_path] = [spawn_data]
+                else:
+                    level_data[bad_room_path].append(data)
         name = level_data["spawn"]
         dynamic_fs_levels[name] = level_data
         
