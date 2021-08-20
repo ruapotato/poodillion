@@ -41,6 +41,8 @@ fount_size = fount_size * 4
 npc_imges = {}
 total_life = 100
 player_life = total_life
+total_power = 100
+player_power = total_power
 dynamic_fs_levels = {}
 init_text = "Enter your password in the pkexec window\nThen press any key to continue..."
 #                   Text:Time in ticks
@@ -476,7 +478,7 @@ def update_game():
                     #msg some string to say
                     if drops.startswith("msg"):
                         msg = drops[3:]
-                        display_txt = {msg:50}
+                        display_txt = {msg:25}
                     if drops.endswith("HP"):
                         life_drop = int(drops.strip("HP"))
                         player_life = player_life + life_drop
@@ -486,7 +488,7 @@ def update_game():
                     if drops.startswith("unlock"):
                         short_name = drops.split("unlock")[-1]
                         msg = f"A door has Opened!\nFind your way to:\n  {current_level_base}{short_name}"
-                        display_txt = {msg:50}
+                        display_txt = {msg:25}
                         full_path = f"{chroot_path}{current_level_base}{short_name}"
                         print(f"Unlock: {full_path}")
                         unlock_door(full_path)
@@ -548,8 +550,12 @@ def main_interface():
     global game_actors
     global game_tick
     global player_life
+    global player_power
     global display_txt
     global redraw_forced
+    global std_out
+    global prompt_text
+    global view_tty
     
     running = True
     
@@ -563,6 +569,9 @@ def main_interface():
     game_actors = {}
     game_tick = 1
     redraw_forced = False
+    view_tty = False
+    pre_game = True
+
     #img = pygame.image.load(image_file_to_display)
     #img = pygame.transform.scale(img, (display_width, display_height))
     
@@ -594,8 +603,10 @@ def main_interface():
         
 
         #redraw room
-        if (rendered_path != PWD and PWD != "Loading...") or redraw_forced:
-            
+        if (rendered_path != PWD or redraw_forced) and PWD != "Loading...":
+            ######################################################
+            ########Updates on PWD change or redraw_forced########
+            ######################################################
             #Play cd action
             if not redraw_forced:
                 short_pwd = f"./{PWD.split('/')[-1]}"
@@ -626,7 +637,10 @@ def main_interface():
             
             
             #Don't update logic if redraw if forced
-            if not redraw_forced:
+            if not redraw_forced or pre_game:
+                #End pre_game
+                pre_game = False
+                
                 #load spawner
                 load_spawner(PWD)
                 
@@ -636,15 +650,41 @@ def main_interface():
                 redraw_forced = False
             #Draw dirs in room as doors
             dir_pos = draw_doors()
-        
+        ######################################################
+        #################Updates every Tick###################
+        ######################################################
         #Draw life bar:
         #clear old
         pygame.draw.rect(gameDisplay,(255,255,255),(20,20,100,10))
         #Draw new
         value_bar(20,20, player_life, from_right=False, size=10, px_multiplayer=1, hide_text=False, title="Life")
         
+        
+        #Draw Power bar
+        pos = display_width-125
+        pygame.draw.rect(gameDisplay,(255,255,255),(pos,20,100,10))
+        #Draw new
+        value_bar(pos,20, player_power, from_right=False, size=10, px_multiplayer=1, hide_text=False, title="Power")
+        player_power
+        
+        
+        
+        #If in draw tty mode:
+        if view_tty or pre_game:
+            std_raw = get_tty_out()
+            prompt_text = std_raw[0]
+            std_out = std_raw[1]
+            std_out_tmp = ""
+            for line in std_out:
+                if line.strip() != "":
+                    std_out_tmp = std_out_tmp + line + "\n"
+            std_out_tmp = f"{std_out_tmp}{prompt_text}"
+            display_txt[std_out_tmp] = 1
+        
         #Update display text:
+        msg_offset = -100
         for message in display_txt:
+            msg_offset = msg_offset + 100
             ticks_left = display_txt[message]
             display_txt[message] = display_txt[message] - 1
             if ticks_left <= 0:
@@ -653,20 +693,23 @@ def main_interface():
                 break
             else:
                 #clear
-                pos = [25,45]
+                pos = [25,45+msg_offset]
                 for line in message.split("\n"):
                     pygame.draw.rect(gameDisplay,background_color,(pos[0]-5,pos[1]-5,display_width -pos[0]*2 ,20))
                     #Draw
                     TextRect = text_font.render(line, True, (255, 255, 255))
                     gameDisplay.blit(TextRect, (pos[0],pos[1]))
-                    print(f"{message}:{ticks_left}")
+                    #print(f"{message}:{ticks_left}")
                     pos[1] += 15
-        #print(display_txt)
-        #read_clip_button_text = prompt_text
-        #read_clip_button_pos = [display_width- 115,0]
-        #read_clip_button_size = [105,30]
-        #blue_color = pygame.color.Color("blue")
-        #button(read_clip_button_text,read_clip_button_pos[0],read_clip_button_pos[1],read_clip_button_size[0],read_clip_button_size[1],blue_color,blank)
+        
+
+            
+        
+        #Draw STD view button
+        std_button_pos = [display_width - 50,display_height - 50]
+        std_button_size = [35,30]
+        view_tty = False
+        button("TTY",std_button_pos[0],std_button_pos[1],std_button_size[0],std_button_size[1],(0,0,255),view_tty_set_true)
     
         #button("",sidebar_pos[0],sidebar_pos[1],20,300,lockdown_color,quit)
         
@@ -694,6 +737,16 @@ def main_interface():
         #print("Tick")
         pygame.display.update()
         clock.tick(6)
+
+def view_tty_set_true():
+    global view_tty
+    global player_power
+    
+    cost = 1
+    if player_power >= cost:
+        player_power -= cost
+        view_tty = True
+
 
 #place holder button function
 def blank():
