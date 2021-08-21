@@ -628,6 +628,13 @@ def main_interface():
             #draw player
             gameDisplay.blit(player_image, player_xy)
             
+            #draw map
+            pos = 30
+            width_offset = display_width - (len(PWD)*5) - 35
+            pygame.draw.rect(gameDisplay,(255,255,255),(0,pos,15,30))
+            TextRect = text_font.render(PWD, True, (0, 0, 0))
+            gameDisplay.blit(TextRect,(width_offset,pos))
+            
             #Draw ../ door
             if PWD != "/":
                 pos = int(display_height/2)
@@ -701,12 +708,11 @@ def main_interface():
                     gameDisplay.blit(TextRect, (pos[0],pos[1]))
                     #print(f"{message}:{ticks_left}")
                     pos[1] += 15
-        
 
             
         
         #Draw STD view button
-        std_button_pos = [display_width - 50,display_height - 50]
+        std_button_pos = [display_width - 55,display_height - 50]
         std_button_size = [35,30]
         view_tty = False
         button("TTY",std_button_pos[0],std_button_pos[1],std_button_size[0],std_button_size[1],(0,0,255),view_tty_set_true)
