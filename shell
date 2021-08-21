@@ -212,6 +212,11 @@ def draw_doors():
     return(dir_pos)
 
 
+def setup_life_file(life_file, life_value):
+    data_to_write = f"life:{life_value}\nunder_attack:False"
+    with open(life_file, 'w') as fh:
+        fh.write(data_to_write)
+            
 def process_NPC_line(line):
     global script_path
     global npc_imges
@@ -223,17 +228,11 @@ def process_NPC_line(line):
     
     raw_data = line.split(":")
     #Example data
-    ##   when:          img:             name:    % action:damage:    % drops
-    #on_enter: frog_guy.png:              bob: 100% walk 3:     1: 100% na
-    #every 40: frog_guy.png: son_of_bob_$RAND: 100% walk 3:     1:  50% 5HP
+    ##   when:          img:             name:    % action:damage:life:    % drops
+    #on_enter: frog_guy.png:              bob: 100% walk 3:     1:  10: 100% na
+    #every 40: frog_guy.png: son_of_bob_$RAND: 100% walk 3:     1:  10: 50% 5HP
     when = raw_data[0].strip()
     name = raw_data[2].strip()
-    life_file = ""
-    if when == "on_enter":
-        life_file = f"{chroot_PWD}/{name}"
-        with open(life_file, 'w') as fh:
-            pass
-        when = "active"
     img = f"{script_path}/img/{raw_data[1].strip()}"
     npc_imges[img] = pygame.image.load(img).convert()
     
@@ -246,7 +245,16 @@ def process_NPC_line(line):
     
     damage = int(raw_data[4].strip())
     
-    drop_raw = raw_data[5].strip().split(' ')
+    life = int(raw_data[5].strip())
+    life_file = ""
+    if when == "on_enter":
+        life_file = f"{chroot_PWD}/{name}"
+        #with open(life_file, 'w') as fh:
+            #pass
+        setup_life_file(life_file, life)
+        when = "active"
+    
+    drop_raw = raw_data[6].strip().split(' ')
     #Example data
     #["50%", "5HP"]
     #["100%", "na"]
@@ -320,16 +328,17 @@ def did_it_happen(chance):
         return(True)
     return(False)
 
-def FIRE(pos):
+def FIRE(pos, clean_up_and_display=True):
     global gameDisplay
     global player_xy
     fire_pos = [player_xy[0] + 30,player_xy[1] + 10]
     pygame.draw.line(gameDisplay, (255,0,0), (fire_pos[0], fire_pos[1]), (pos[0], pos[1]), 4)
     pygame.display.update()
     
-    clock.tick(6)
-    #Clear line
-    pygame.draw.line(gameDisplay, (255,255,255), (fire_pos[0], fire_pos[1]), (pos[0], pos[1]), 4)
+    if clean_up_and_display:
+        clock.tick(6)
+        #Clear line
+        pygame.draw.line(gameDisplay, (255,255,255), (fire_pos[0], fire_pos[1]), (pos[0], pos[1]), 4)
 
 def unlock_door(dir_name):
     os.chmod(dir_name, 0o777)
@@ -455,9 +464,11 @@ def update_game():
                 
                 new_npc['name'] = new_npc_name
                 life_file = f"{chroot_PWD}/{new_npc_name}"
+                life_value = new_npc['life']
+                setup_life_file(life_file, life_value)
                 print(life_file)
-                with open(life_file, 'w') as fh:
-                    pass
+                #with open(life_file, 'w') as fh:
+                #    pass
                 new_npc['when'] = "active"
                 new_npc['life_file'] = life_file
 
@@ -506,6 +517,17 @@ def update_game():
                 pygame.draw.rect(gameDisplay,(255,255,255),(pos[0],pos[1],img.get_width(),img.get_height()))
                 game_actors[player_name]['when'] = "DEAD"
                 continue
+            
+            #Check we have an ative attack
+            if os.path.isfile(life_file):
+                pos = game_actors[player_name]['lastPos']
+                with open(life_file) as fh:
+                    life_data = fh.readlines()
+                for line in life_data:
+                    if line.startswith("under_attack:True"):
+                        #ative under_attack
+                        FIRE(pos, clean_up_and_display=False)
+            
             pos = game_actors[player_name]['pos']
             action = game_actors[player_name]['action']
             action_chance = game_actors[player_name]['action_chance']
@@ -830,8 +852,8 @@ def load_dynamic():
                     level_data[room_path].append(data)
             if level_line.startswith("on_path:"):
                 #Example data
-                #all on path:     when:           img:     name:    %  action:damage:   % drops
-                #on_path:/1/2:on_enter: ball_boss.png: the_lost: 100% walk 10:     7: 70% msg Yo. 
+                #all on path:     when:           img:     name:    %  action:damage:life:   % drops
+                #on_path:/1/2:on_enter: ball_boss.png: the_lost: 100% walk 10:     7:  10: 70% msg Yo. 
 
                 data = level_line.split(":")
                 room_path = f"*{data[1]}"
@@ -843,8 +865,8 @@ def load_dynamic():
             
             if level_line.startswith("off_path:"):
                 #Example data
-                #all on path:     when:           img:     name:    %  action:damage:   % drops
-                #on_path:/1/2:on_enter: ball_boss.png: the_lost: 100% walk 10:     7: 70% msg Yo. 
+                #all on path:     when:           img:     name:    %  action:damage:life:   % drops
+                #on_path:/1/2:on_enter: ball_boss.png: the_lost: 100% walk 10:     7:  10: 70% msg Yo. 
 
                 data = level_line.split(":")
                 bad_room_path = f"-{data[1]}"

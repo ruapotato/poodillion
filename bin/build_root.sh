@@ -37,12 +37,16 @@ fi
 if [ "aarch64" == $(uname -m) ]
 then
     echo "Running on aarch64"
-    debootstrap --arch arm64 bullseye $shell_root http://ftp.us.debian.org/debian
+    debootstrap --include python3 --arch arm64 bullseye $shell_root http://ftp.us.debian.org/debian
     
 else
     echo "Running on amd64"
-    debootstrap --arch amd64 bullseye $shell_root http://ftp.us.debian.org/debian
+    debootstrap --include python3 --arch amd64 bullseye $shell_root http://ftp.us.debian.org/debian
 fi
+
+#install rm
+mv $shell_root/usr/bin/rm $shell_root/root/rm
+cp ./fake_rm.py $shell_root/usr/bin/rm
 
 echo "Running setup script"
 cp ./init_world.sh $shell_root
