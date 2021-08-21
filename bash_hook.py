@@ -40,11 +40,12 @@ clicks = []
 space_to_clear = []
 target_tty = 0
 RUNNING = []
+debugging = False
 
 working_dir = script_path
-composit_running = f"{working_dir}/running"
-with open(composit_running, 'w') as fh:
-    pass
+#composit_running = f"{working_dir}/running"
+#with open(composit_running, 'w') as fh:
+#    pass
 
 #Only used by Draw inside the draw loop/thread
 
@@ -130,49 +131,49 @@ def add_slave(pid):
     for index in range(offset, offset + len(TTY)):
         buf[index] = ord(TTY[index - offset])
 
-def read_running(flat=False):
-    global composit_running
+#def read_running(flat=False):
+    #global composit_running
     
-    if flat:
-        nice_looking_list_of_stuff_running = {}
-    else:
-        nice_looking_list_of_stuff_running = []
-    with open(composit_running) as tmp_file_handle:
-        for line in tmp_file_handle.readlines():
-            if line != "":
-                line = line.strip()
-                index,cmd = line.split(":")
-                if flat:
-                    nice_looking_list_of_stuff_running[int(index)] = cmd
-                else:
-                    nice_looking_list_of_stuff_running.append({index:cmd})
-    return(nice_looking_list_of_stuff_running)
+    #if flat:
+        #nice_looking_list_of_stuff_running = {}
+    #else:
+        #nice_looking_list_of_stuff_running = []
+    #with open(composit_running) as tmp_file_handle:
+        #for line in tmp_file_handle.readlines():
+            #if line != "":
+                #line = line.strip()
+                #index,cmd = line.split(":")
+                #if flat:
+                    #nice_looking_list_of_stuff_running[int(index)] = cmd
+                #else:
+                    #nice_looking_list_of_stuff_running.append({index:cmd})
+    #return(nice_looking_list_of_stuff_running)
     
 
-def add_cli(index,cmd):
-    global composit_running
+#def add_cli(index,cmd):
+    #global composit_running
     
-    if index not in read_running():
-        with open(composit_running, 'a') as tmp_file_handle:
-            index_and_whatnot = f"{index}:{cmd}\n"
-            tmp_file_handle.write(index_and_whatnot)
-    else:
-        debug(f"Error adding duplicate index {index}:{cmd}")
+    #if index not in read_running():
+        #with open(composit_running, 'a') as tmp_file_handle:
+            #index_and_whatnot = f"{index}:{cmd}\n"
+            #tmp_file_handle.write(index_and_whatnot)
+    #else:
+        #debug(f"Error adding duplicate index {index}:{cmd}")
 
 
-def remove_cli(index):
-    stuff_running = read_running()    
-    #TODO
-    #clear composit_running
-    open(composit_running, 'w').close()
+#def remove_cli(index):
+    #stuff_running = read_running()    
+    ##TODO
+    ##clear composit_running
+    #open(composit_running, 'w').close()
     
-    #loop stuff_running and add it back
-    for still_open in stuff_running:
-        open_index = list(still_open.keys())[0]
-        if int(open_index) != int(index):
-            debug(f"still running {still_open}")
-            cmd = still_open[open_index]
-            add_cli(open_index, cmd)
+    ##loop stuff_running and add it back
+    #for still_open in stuff_running:
+        #open_index = list(still_open.keys())[0]
+        #if int(open_index) != int(index):
+            #debug(f"still running {still_open}")
+            #cmd = still_open[open_index]
+            #add_cli(open_index, cmd)
     
         
 
@@ -181,20 +182,18 @@ def bash_screen_ref(cmd, local_screen):
     global screens
     global output_data
     global dirty_screens
-    global composit_running
     global RUNNING
     
     #store current output screen
     debug("OPENING SCREEN WITH DISPLAY: " + str(local_screen))
     
     #store what we just ran
-    add_cli(local_screen, cmd)
-    composit_running
+    #add_cli(local_screen, cmd)
     output_index = 0
     for output_bit in bash_attach(cmd, local_screen):
 
         if local_screen not in RUNNING:
-            remove_cli(local_screen)
+            #remove_cli(local_screen)
             debug("end bash")
             #exit()
         #debug("output_bit: " + str(output_bit))
@@ -370,10 +369,12 @@ def bash_attach(cmd, screen_id):
 
 def debug(error_string):
     global DEBUG_LOG
-    DEBUG_LOG = f"{script_path}/debug"
-    
-    with open(DEBUG_LOG, 'a+') as the_log:
-        the_log.write(str(error_string) + "\n")
+    global debugging
+    #DEBUG_LOG = f"{script_path}/debug"
+    if debugging:
+        print(error_string)
+    #with open(DEBUG_LOG, 'a+') as the_log:
+    #    the_log.write(str(error_string) + "\n")
         #print(error_string, file=sys.stderr)
 
 
