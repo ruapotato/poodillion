@@ -119,16 +119,38 @@ def draw_prompt(prompt_text):
     TextRect = text_font.render(prompt_text, True, (255, 255, 255))
     gameDisplay.blit(TextRect, (0,display_height-12))
 
-def action_cd(new_xy, exit_right=True, reset_player_pos=True):
+def action_cd(new_xy, reset_player_pos=True):
     global gameDisplay
     global player_xy
     global player_image
+    global player_speed
+    global player_start_pos
+    global player_target
+    
+    fps = 20
+    cd_speed = 15
+    while player_xy != new_xy:
+        print(f"Updateing: {player_xy} {new_xy} ")
+        #clear old pos
+        pygame.draw.rect(gameDisplay,(255,0,0),(player_xy[0],player_xy[1],player_image.get_width(),player_image.get_height()))
+        #setup new pos
+        new_pos = get_point_along(player_xy, new_xy, cd_speed)
+        player_xy = new_pos
+        #redraw player
+        gameDisplay.blit(player_image, player_xy)
+        pygame.display.update()
+        clock.tick(fps)
+    player_xy = copy.deepcopy(player_start_pos)
+    player_target = copy.deepcopy(player_start_pos)
+    
+    """
     num_frames = 30
     fps = 30
     player_img_height = 90
     player_start = copy.deepcopy(player_xy)
     space_to_move_right = (display_width - player_xy[0])/num_frames
     space_to_move_up_down = ((new_xy-player_img_height/2) - player_xy[1])/num_frames
+    
     if not exit_right:
         space_to_move_right = space_to_move_right * -1
         space_to_move_up_down = 0
@@ -144,7 +166,7 @@ def action_cd(new_xy, exit_right=True, reset_player_pos=True):
         clock.tick(fps)
     if reset_player_pos:
         player_xy = player_start
-
+    """
 def draw_doors():
     global gameDisplay
     global PWD
@@ -353,7 +375,7 @@ def update_dynamic_fs():
     global level_data
     global current_level_base
     
-    print(dynamic_fs_levels)
+    #print(dynamic_fs_levels)
     
     for spawn in dynamic_fs_levels:
         level_data = dynamic_fs_levels[spawn]
@@ -407,8 +429,8 @@ def update_dynamic_fs():
                         print(f"Setting up {tmp_level_data}")
                         for line in tmp_level_data:
                             process_NPC_line(line)
-                else:
-                    print(f"Not starting with - {level_object}")
+                #else:
+                    #print(f"Not starting with - {level_object}")
             
             #Build new rooms
             if depth < max_depth:
@@ -437,8 +459,8 @@ def get_point_along(point1, point2, speed):
     y_delta = abs(point1[1] - point2[1])
     
     total_delta = x_delta + y_delta
-    x_speed = (player_speed/total_delta)*x_delta
-    y_speed = (player_speed/total_delta)*y_delta
+    x_speed = (speed/total_delta)*x_delta
+    y_speed = (speed/total_delta)*y_delta
     
     #game_actors[player_name]['lastPos'] = copy.deepcopy(game_actors[player_name]['pos'])
     if point1[0] - point2[0] < 0:
@@ -451,9 +473,9 @@ def get_point_along(point1, point2, speed):
     else:
         new_point[1] -= y_speed
     
-    if abs(new_point[0] - point2[0]) < player_speed:
+    if abs(new_point[0] - point2[0]) < speed:
         new_point[0] = point2[0]
-    if abs(point1[1] - point2[1]) < player_speed:
+    if abs(point1[1] - point2[1]) < speed:
         new_point[1] = point2[1]
     
     return(new_point)
@@ -475,13 +497,12 @@ def update_game():
     
     #Move player if needed
     if player_xy != player_target:
+        print(f"Moving player: {player_xy}")
         #clear current pos
         pygame.draw.rect(gameDisplay,(255,255,255),(player_xy[0],player_xy[1],player_image.get_width(),player_image.get_height()))
-        print(f"\nMoving {player_xy}")
+        #update pos
         player_xy = get_point_along(player_xy, player_target, player_speed)
-        
-        
-        print(f"Moved {player_xy}")
+        #Redraw player
         gameDisplay.blit(player_image, player_xy)
     
     #Process NPCs
@@ -626,6 +647,7 @@ def main_interface():
     global view_tty
     global player_speed
     global player_target
+    global player_start_pos
     
     running = True
     
@@ -683,14 +705,14 @@ def main_interface():
             ######################################################
             #Play cd action
             if not redraw_forced:
-                player_xy = copy.deepcopy(player_start_pos)
-                player_target = copy.deepcopy(player_start_pos)
+                #player_xy = copy.deepcopy(player_start_pos)
+                #player_target = copy.deepcopy(player_start_pos)
                 
                 short_pwd = f"./{PWD.split('/')[-1]}"
                 if short_pwd in dir_pos:
-                    action_cd(dir_pos[short_pwd])
+                    action_cd([display_width,dir_pos[short_pwd]])
                 elif rendered_path != None:
-                    action_cd(player_xy[0], exit_right=False)
+                    action_cd([0,display_height/2])
             
             #Update rendered path
             rendered_path = PWD
