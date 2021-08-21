@@ -430,6 +430,34 @@ def update_dynamic_fs():
         #for level_item in level_data:
             #print(f"{level_item}:{level_data[level_item]}")
 
+#Used for moving along a line at a speed
+def get_point_along(point1, point2, speed):
+    new_point = copy.deepcopy(point1)
+    x_delta = abs(point1[0] - point2[0])
+    y_delta = abs(point1[1] - point2[1])
+    
+    total_delta = x_delta + y_delta
+    x_speed = (player_speed/total_delta)*x_delta
+    y_speed = (player_speed/total_delta)*y_delta
+    
+    #game_actors[player_name]['lastPos'] = copy.deepcopy(game_actors[player_name]['pos'])
+    if point1[0] - point2[0] < 0:
+        new_point[0] += x_speed
+    else:
+        new_point[0] -= x_speed
+    
+    if point1[1] - point2[1] < 0:
+        new_point[1] += y_speed
+    else:
+        new_point[1] -= y_speed
+    
+    if abs(new_point[0] - point2[0]) < player_speed:
+        new_point[0] = point2[0]
+    if abs(point1[1] - point2[1]) < player_speed:
+        new_point[1] = point2[1]
+    
+    return(new_point)
+
 def update_game():
     global gameDisplay
     global player_xy
@@ -440,7 +468,23 @@ def update_game():
     global game_actors
     global current_level_base
     global display_txt
+    global player_target
+    global player_speed
+    global player_image
     
+    
+    #Move player if needed
+    if player_xy != player_target:
+        #clear current pos
+        pygame.draw.rect(gameDisplay,(255,255,255),(player_xy[0],player_xy[1],player_image.get_width(),player_image.get_height()))
+        print(f"\nMoving {player_xy}")
+        player_xy = get_point_along(player_xy, player_target, player_speed)
+        
+        
+        print(f"Moved {player_xy}")
+        gameDisplay.blit(player_image, player_xy)
+    
+    #Process NPCs
     #print(game_actors)
     new_NPCs = {}
     chroot_PWD = chroot_path + PWD
@@ -534,7 +578,7 @@ def update_game():
             if did_it_happen(action_chance):
                 if action.startswith("walk"):
                     #check if we are hit
-                    if (pos[0] - player_xy[0]) < 25 and (pos[1] - player_xy[1]) < 25:
+                    if abs(pos[0] - player_xy[0]) < 25 and abs(pos[1] - player_xy[1]) < 25:
                         player_life = player_life - damage
                         if player_life <= 0:
                             #Reset
@@ -545,22 +589,24 @@ def update_game():
                         print("Hit")
                         continue
                     speed = int(action.split(" ")[-1])
-                    x_delta = pos[0] - player_xy[0]
-                    y_delta = pos[1] - player_xy[1]
+                    new_pos = get_point_along(pos, player_xy, speed)
+                    #x_delta = pos[0] - player_xy[0]
+                    #y_delta = pos[1] - player_xy[1]
                     
-                    total_delta = x_delta + y_delta
-                    x_speed = (speed/total_delta)*x_delta
-                    y_speed = (speed/total_delta)*y_delta
+                    #total_delta = x_delta + y_delta
+                    #x_speed = (speed/total_delta)*x_delta
+                    #y_speed = (speed/total_delta)*y_delta
                     
                     game_actors[player_name]['lastPos'] = copy.deepcopy(game_actors[player_name]['pos'])
-                    game_actors[player_name]['pos'][0] -= x_speed
-                    game_actors[player_name]['pos'][1] -= y_speed
+                    game_actors[player_name]['pos'] = new_pos
                     #print(f"Moving with speed of {speed} {x_speed} {y_speed}")
                     
             #print(pos)
     #add new NPCs outside of above eath loop
     for new_npc_name in new_NPCs:
         game_actors[new_npc_name] = new_NPCs[new_npc_name]
+
+
 def main_interface():
     #Globals needed by the reset call
     global selected_crop
@@ -578,6 +624,8 @@ def main_interface():
     global std_out
     global prompt_text
     global view_tty
+    global player_speed
+    global player_target
     
     running = True
     
@@ -585,7 +633,10 @@ def main_interface():
     prompt_text = prompt_raw
     std_out = ""
     num_dir_door = 0
-    player_xy = [50, int(display_height/2)-45]
+    player_start_pos = [50, int(display_height/2)-45]
+    player_xy = copy.deepcopy(player_start_pos)
+    player_target = player_xy
+    player_speed = 5
     player_image = pygame.image.load(f"{script_path}/img/player.png").convert()
     dir_pos = {}
     game_actors = {}
@@ -593,6 +644,7 @@ def main_interface():
     redraw_forced = False
     view_tty = False
     pre_game = True
+    
 
     #img = pygame.image.load(image_file_to_display)
     #img = pygame.transform.scale(img, (display_width, display_height))
@@ -622,7 +674,7 @@ def main_interface():
                 PWD = get_PWD()
                 #print(PWD)
                 draw_prompt(prompt_text)
-        
+
 
         #redraw room
         if (rendered_path != PWD or redraw_forced) and PWD != "Loading...":
@@ -631,6 +683,9 @@ def main_interface():
             ######################################################
             #Play cd action
             if not redraw_forced:
+                player_xy = copy.deepcopy(player_start_pos)
+                player_target = copy.deepcopy(player_start_pos)
+                
                 short_pwd = f"./{PWD.split('/')[-1]}"
                 if short_pwd in dir_pos:
                     action_cd(dir_pos[short_pwd])
@@ -738,7 +793,16 @@ def main_interface():
         std_button_size = [35,30]
         view_tty = False
         button("TTY",std_button_pos[0],std_button_pos[1],std_button_size[0],std_button_size[1],(0,0,255),view_tty_set_true)
-    
+        
+        
+        #Process move click/tap
+        mouse_pos = pygame.mouse.get_pos()
+        click = pygame.mouse.get_pressed()
+        #if tap down
+        if click[0] == 1:
+            x,y = mouse_pos
+            player_target = [x,y]
+            print(player_target)
         #button("",sidebar_pos[0],sidebar_pos[1],20,300,lockdown_color,quit)
         
         
