@@ -119,6 +119,15 @@ def draw_prompt(prompt_text):
     TextRect = text_font.render(prompt_text, True, (255, 255, 255))
     gameDisplay.blit(TextRect, (0,display_height-12))
 
+def draw_img(img, pos):
+    new_pos = [pos[0] - int(img.get_width()/2), pos[1] - int(img.get_height()/2)]
+    gameDisplay.blit(img, new_pos)
+
+
+def clear_img(img, pos, color=(255,255,255)):
+    new_pos = [pos[0] - int(img.get_width()/2), pos[1] - int(img.get_height()/2)]
+    pygame.draw.rect(gameDisplay,color,(new_pos[0],new_pos[1],img.get_width(),img.get_height()))
+
 def action_cd(new_xy, reset_player_pos=True):
     global gameDisplay
     global player_xy
@@ -132,12 +141,13 @@ def action_cd(new_xy, reset_player_pos=True):
     while player_xy != new_xy:
         print(f"Updateing: {player_xy} {new_xy} ")
         #clear old pos
-        pygame.draw.rect(gameDisplay,(255,0,0),(player_xy[0],player_xy[1],player_image.get_width(),player_image.get_height()))
+        clear_img(player_image, player_xy)
+        #pygame.draw.rect(gameDisplay,(255,0,0),(player_xy[0],player_xy[1],player_image.get_width(),player_image.get_height()))
         #setup new pos
         new_pos = get_point_along(player_xy, new_xy, cd_speed)
         player_xy = new_pos
         #redraw player
-        gameDisplay.blit(player_image, player_xy)
+        draw_img(player_image, player_xy)
         pygame.display.update()
         clock.tick(fps)
     player_xy = copy.deepcopy(player_start_pos)
@@ -337,10 +347,12 @@ def draw_npc():
             img = game_actors[player_name]['img']
             img = npc_imges[img]
             pos = game_actors[player_name]['lastPos']
-            pygame.draw.rect(gameDisplay,(255,255,255),(pos[0],pos[1],img.get_width(),img.get_height()))
+            clear_img(img, pos)
+            #pygame.draw.rect(gameDisplay,(255,255,255),(pos[0],pos[1],img.get_width(),img.get_height()))
             #Draw new
             pos = game_actors[player_name]['pos']
-            gameDisplay.blit(img, pos)
+            draw_img(img, pos)
+            #gameDisplay.blit(img, pos)
             
 
 def did_it_happen(chance):
@@ -353,7 +365,7 @@ def did_it_happen(chance):
 def FIRE(pos, clean_up_and_display=True):
     global gameDisplay
     global player_xy
-    fire_pos = [player_xy[0] + 30,player_xy[1] + 10]
+    fire_pos = [player_xy[0] ,player_xy[1] - 35]
     pygame.draw.line(gameDisplay, (255,0,0), (fire_pos[0], fire_pos[1]), (pos[0], pos[1]), 4)
     pygame.display.update()
     
@@ -499,11 +511,12 @@ def update_game():
     if player_xy != player_target:
         print(f"Moving player: {player_xy}")
         #clear current pos
-        pygame.draw.rect(gameDisplay,(255,255,255),(player_xy[0],player_xy[1],player_image.get_width(),player_image.get_height()))
+        clear_img(player_image, player_xy)
+        #pygame.draw.rect(gameDisplay,(255,255,255),(player_xy[0],player_xy[1],player_image.get_width(),player_image.get_height()))
         #update pos
         player_xy = get_point_along(player_xy, player_target, player_speed)
         #Redraw player
-        gameDisplay.blit(player_image, player_xy)
+        draw_img(player_image, player_xy)
     
     #Process NPCs
     #print(game_actors)
@@ -572,14 +585,16 @@ def update_game():
                 #Setup needed data
                 img = game_actors[player_name]['img']
                 img = npc_imges[img]
-                pos = game_actors[player_name]['lastPos']
+                pos = game_actors[player_name]['pos']
                 
                 #Draw laser
-                pygame.draw.rect(gameDisplay,(255,0,0),(pos[0],pos[1],img.get_width(),img.get_height()))
+                clear_img(img, pos, color=(255,0,0))
+                #pygame.draw.rect(gameDisplay,(255,0,0),(pos[0],pos[1],img.get_width(),img.get_height()))
                 FIRE(pos)
                 
-                #clear player
-                pygame.draw.rect(gameDisplay,(255,255,255),(pos[0],pos[1],img.get_width(),img.get_height()))
+                #clear npc
+                clear_img(img, pos)
+                #pygame.draw.rect(gameDisplay,(255,255,255),(pos[0],pos[1],img.get_width(),img.get_height()))
                 game_actors[player_name]['when'] = "DEAD"
                 continue
             
@@ -725,12 +740,12 @@ def main_interface():
             draw_prompt(prompt_text)
             
             #draw player
-            gameDisplay.blit(player_image, player_xy)
+            draw_img(player_image, player_xy)
             
             #draw map
             pos = 30
             width_offset = display_width - (len(PWD)*5) - 35
-            pygame.draw.rect(gameDisplay,(255,255,255),(0,pos,15,30))
+            #pygame.draw.rect(gameDisplay,(255,0,0),(0,pos,15,30))
             TextRect = text_font.render(PWD, True, (0, 0, 0))
             gameDisplay.blit(TextRect,(width_offset,pos))
             
