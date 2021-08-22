@@ -244,7 +244,7 @@ def draw_doors():
     return(dir_pos)
 
             
-def process_NPC_line(line):
+def process_NPC_line(line, is_friend=False):
     global script_path
     global npc_imges
     global game_actors
@@ -295,13 +295,14 @@ def process_NPC_line(line):
                         old_npc_line = ":".join(line.split(":")[1:])
                         old_npc_line = old_npc_line.replace("$LIFE", str(life))
                         print(old_npc_line)
-                        process_NPC_line(old_npc_line)
+                        
+                        process_NPC_line(old_npc_line, is_friend=is_friend)
                         
                         print(f"Old guy: {old_npc_line}")
                         return
             
         else:
-            write_life_file(life_file, life, respawn_line)
+            write_life_file(life_file, life, respawn_line, is_friend=is_friend)
         when = "active"
     drop_raw = raw_data[6].strip().split(' ')
     #Example data
@@ -327,9 +328,43 @@ def process_NPC_line(line):
                             "drops":drops,
                             "pos":start_pos,
                             "lastPos": copy.deepcopy(start_pos),
-                            "life_file": life_file}
+                            "life_file": life_file,
+                            "is_friend": is_friend}
 
-def load_spawner(PWD):
+def load_player_spawners(PWD, load_only=False):
+    global chroot_path
+    chroot_PWD = chroot_path + PWD
+    #If we have a spawners files load them
+    try:
+        files_and_dirs = os.listdir(chroot_PWD)
+    except PermissionError:
+        files_and_dirs = []
+    for file_or_dir in files_and_dirs:
+        file_or_dir = chroot_PWD + "/" + file_or_dir
+        if os.path.isfile(file_or_dir):
+            #filter if load_only is set
+            if load_only and load_only not in file_or_dir:
+                continue
+            file_name = file_or_dir
+            life = check_for_life(file_name)
+            if life:
+                respawn = get_respawn(file_name)
+                respawn = respawn.replace("$LIFE", str(life))
+                #respawn = f"active:{respawn}"
+                #example:
+                #active:frog_guy.png:frog*: 100% walk 3:     1:   3: 100% na
+                respawn_data = respawn.split(":")
+                #Update file name
+                respawn_data[2] = file_name.split("/")[-1]
+                respawn = ":".join(respawn_data)
+                
+                is_friend = friendly(file_name)
+                print(f"What do you think? friend: {is_friend}")
+                print(respawn)
+                process_NPC_line(respawn, is_friend=is_friend)
+
+
+def load_spawners(PWD):
     global chroot_path
     global game_actors
     global npc_imges
@@ -348,7 +383,7 @@ def load_spawner(PWD):
                     continue
                 if line.startswith("on_enter") or line.startswith("every"):
                     process_NPC_line(line)
-                    
+    load_player_spawners(PWD)
         
 
 def draw_npc():
@@ -482,6 +517,8 @@ def get_point_along(point1, point2, speed):
     y_delta = abs(point1[1] - point2[1])
     
     total_delta = x_delta + y_delta
+    if total_delta == 0:
+        return(point2)
     x_speed = (speed/total_delta)*x_delta
     y_speed = (speed/total_delta)*y_delta
     
@@ -538,6 +575,7 @@ def update_game():
         drop_chance = game_actors[player_name]['drop_chance']
         drops = game_actors[player_name]['drops']
         damage = game_actors[player_name]['damage']
+        is_friendly = False
         if status.startswith("every"):
             #print(status)
             start_on = int(status.split(" ")[-1])
@@ -569,6 +607,7 @@ def update_game():
         if status == "active":
             #print("Active NPC")
             life_file = game_actors[player_name]['life_file']
+            is_friendly = game_actors[player_name]['is_friend']
             if not os.path.isfile(life_file):
                 print(f"Killed {life_file}")
                 if did_it_happen(drop_chance):
@@ -620,25 +659,30 @@ def update_game():
                         #ative under_attack
                         FIRE(pos, clean_up_and_display=False)
             
+            if is_friendly:
+                target = [200,200]
+            else:
+                target = player_xy
             pos = game_actors[player_name]['pos']
             action = game_actors[player_name]['action']
             action_chance = game_actors[player_name]['action_chance']
             if did_it_happen(action_chance):
                 if action.startswith("walk"):
-                    #check if we are hit
-                    if abs(pos[0] - player_xy[0]) < 25 and abs(pos[1] - player_xy[1]) < 25:
-                        change_life(damage * -1)
-                        #player_life = player_life - damage
-                        if get_player_life() <= 0:
-                            #Reset
-                            print("Player Dead!")
-                            text = "Better luck next time!"
-                            notify(text)
-                            quit()
-                        print("Hit")
-                        continue
+                    if not is_friendly:
+                        #check if we are hit
+                        if abs(pos[0] - player_xy[0]) < 25 and abs(pos[1] - player_xy[1]) < 25:
+                            change_life(damage * -1)
+                            #player_life = player_life - damage
+                            if get_player_life() <= 0:
+                                #Reset
+                                print("Player Dead!")
+                                text = "Better luck next time!"
+                                notify(text)
+                                quit()
+                            print("Hit")
+                            continue
                     speed = int(action.split(" ")[-1])
-                    new_pos = get_point_along(pos, player_xy, speed)
+                    new_pos = get_point_along(pos, target, speed)
                     #x_delta = pos[0] - player_xy[0]
                     #y_delta = pos[1] - player_xy[1]
                     
@@ -654,6 +698,38 @@ def update_game():
     #add new NPCs outside of above eath loop
     for new_npc_name in new_NPCs:
         game_actors[new_npc_name] = new_NPCs[new_npc_name]
+
+
+def get_changed_files(PWD):
+    global files_processed
+    
+    needs_processed = []
+    chroot_PWD = chroot_path + PWD
+    try:
+        files_and_dirs = os.listdir(chroot_PWD)
+    except PermissionError:
+        files_and_dirs = []
+    for file_or_dir in files_and_dirs:
+        file_or_dir = chroot_PWD + "/" + file_or_dir
+        if os.path.isfile(file_or_dir):
+            if file_or_dir not in files_processed:
+                needs_processed.append(file_or_dir)
+    files_processed = files_processed + needs_processed
+    return(needs_processed)
+
+def set_processed_files(PWD):
+    global files_processed
+    files_processed = []
+    
+    chroot_PWD = chroot_path + PWD
+    try:
+        files_and_dirs = os.listdir(chroot_PWD)
+    except PermissionError:
+        files_and_dirs = []
+    for file_or_dir in files_and_dirs:
+        file_or_dir = chroot_PWD + "/" + file_or_dir
+        if os.path.isfile(file_or_dir):
+            files_processed.append(file_or_dir)
 
 
 def main_interface():
@@ -775,7 +851,8 @@ def main_interface():
                 pre_game = False
                 
                 #load spawner
-                load_spawner(PWD)
+                load_spawners(PWD)
+                set_processed_files(PWD)
                 
                 #Update dynamic_fs
                 update_dynamic_fs()
@@ -792,6 +869,12 @@ def main_interface():
         #Draw new
         value_bar(20,20, get_player_life(), from_right=False, size=10, px_multiplayer=1, hide_text=False, title="Life")
         
+        
+        #Check set_processed_files
+        if PWD != "Loading...":
+            for new_file in get_changed_files(PWD):
+                print(f"New file found {new_file}")
+                load_player_spawners(PWD, load_only=new_file)
         
         #Draw Power bar
         pos = display_width-125

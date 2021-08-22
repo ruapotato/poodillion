@@ -1,7 +1,6 @@
 #!/bin/bash
 #run inside the new chroot
 user=poodillion
-touch /it_worked
 useradd $user
 #clear passwd
 sed -i "s/$user:\!:/$user::/g" /etc/shadow

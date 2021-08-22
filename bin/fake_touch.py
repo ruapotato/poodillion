@@ -26,10 +26,15 @@ for thing_to_touch in args:
             raw_spawn_data = spawn_line.split(":")
             #Example data for spawn_line
             #frog_guy.png:frog*: 100% walk 3:     1:   3: 100% na
+            #Update file name
+            raw_spawn_data[1] = thing_to_touch.split("/")[-1]
             start_life = int(raw_spawn_data[4].strip())
             valid_spawn_name_start = raw_spawn_data[1].strip("*")
             #Example valid_spawn_name_start data
             #frog
+            spawn_line = ":".join(raw_spawn_data)
+            spawn_line = "active:" + spawn_line
+
             if "/" in thing_to_touch:
                 short_file_name = thing_to_touch.split("/")[-1]
             else:

@@ -49,6 +49,10 @@ mv $shell_root/usr/bin/rm $shell_root/root/rm
 cp ./fake_rm.py $shell_root/usr/bin/rm
 cp ../player_sys.py $shell_root/usr/lib/python3.9/
 
+#install touch
+mv $shell_root/usr/bin/touch $shell_root/root/touch
+cp ./fake_touch.py $shell_root/usr/bin/touch
+
 echo "Running setup script"
 cp ./init_world.sh $shell_root
 chroot $shell_root /init_world.sh
