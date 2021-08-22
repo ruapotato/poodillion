@@ -6,12 +6,17 @@
 import sys
 import os
 import time
+from player_sys import *
+setup_sys(resetup=False)
+
 
 pwd = os.system("pwd")
 args = sys.argv[1:]
 
-player_power = 1
+player_power = get_player_laser()
 player_attack_wait = .2
+
+
 
 def check_for_life(path):
     with open(path) as fh:
@@ -33,8 +38,8 @@ for thing_to_rm in args:
         life = check_for_life(thing_to_rm)
         if life:
             print(f"found life: {thing_to_rm}")
-            for i in range(0,life):
-                life = life - 1
+            for i in range(0,int(life/player_power)):
+                life = life - player_power
                 rewrite_life_file(thing_to_rm, life)
                 time.sleep(player_attack_wait)
             os.remove(thing_to_rm)

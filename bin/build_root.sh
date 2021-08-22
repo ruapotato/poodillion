@@ -47,6 +47,7 @@ fi
 #install rm
 mv $shell_root/usr/bin/rm $shell_root/root/rm
 cp ./fake_rm.py $shell_root/usr/bin/rm
+cp ../player_sys.py $shell_root/usr/lib/python3.9/
 
 echo "Running setup script"
 cp ./init_world.sh $shell_root
