@@ -47,7 +47,7 @@ player_power = total_power
 dynamic_fs_levels = {}
 init_text = "Enter your password in the pkexec window\nThen press any key to continue..."
 #                   Text:Time in ticks
-display_txt = {init_text:50}
+#display_txt = {init_text:50}
 
 #Needed for the Librem 5!
 #X11_DISPLAY = ":0"
@@ -243,11 +243,6 @@ def draw_doors():
         gameDisplay.blit(TextRect, (display_width - (len(file_name)*6),pos - 6))
     return(dir_pos)
 
-
-def setup_life_file(life_file, life_value, respawn_line):
-    data_to_write = f"life:{life_value}\nunder_attack:False\nrespawn:{respawn_line}"
-    with open(life_file, 'w') as fh:
-        fh.write(data_to_write)
             
 def process_NPC_line(line):
     global script_path
@@ -306,7 +301,7 @@ def process_NPC_line(line):
                         return
             
         else:
-            setup_life_file(life_file, life, respawn_line)
+            write_life_file(life_file, life, respawn_line)
         when = "active"
     drop_raw = raw_data[6].strip().split(' ')
     #Example data
@@ -522,7 +517,7 @@ def update_game():
     global player_speed
     global player_image
     
-    
+    decrement_sys_msgs()
     #Move player if needed
     if player_xy != player_target:
         print(f"Moving player: {player_xy}")
@@ -559,7 +554,7 @@ def update_game():
                 new_npc['name'] = new_npc_name
                 life_file = f"{chroot_PWD}/{new_npc_name}"
                 life_value = new_npc['life']
-                setup_life_file(life_file, life_value)
+                write_life_file(life_file, life_value)
                 print(life_file)
                 #with open(life_file, 'w') as fh:
                 #    pass
@@ -583,18 +578,18 @@ def update_game():
                     #msg some string to say
                     if drops.startswith("msg"):
                         msg = drops[3:]
-                        display_txt = {msg:25}
+                        write_sys_msg(msg, 25)
                     if drops.endswith("HP"):
                         life_drop = int(drops.strip("HP"))
                         change_life(life_drop)
                         #player_life = player_life + life_drop
                         msg = f"+{life_drop} HP"
-                        display_txt = {msg:10}
+                        write_sys_msg(msg, 10)
                         print(f"Player life: {player_life}")
                     if drops.startswith("unlock"):
                         short_name = drops.split("unlock")[-1]
                         msg = f"A door has Opened!\nFind your way to:\n  {current_level_base}{short_name}"
-                        display_txt = {msg:25}
+                        write_sys_msg(msg, 25)
                         full_path = f"{chroot_path}{current_level_base}{short_name}"
                         print(f"Unlock: {full_path}")
                         unlock_door(full_path)
@@ -673,7 +668,6 @@ def main_interface():
     global game_tick
     global player_life
     global player_power
-    global display_txt
     global redraw_forced
     global std_out
     global prompt_text
@@ -818,28 +812,31 @@ def main_interface():
                 if line.strip() != "":
                     std_out_tmp = std_out_tmp + line + "\n"
             std_out_tmp = f"{std_out_tmp}{prompt_text}"
-            display_txt[std_out_tmp] = 1
+            write_sys_msg(std_out_tmp, 1)
         
         #Update display text:
-        msg_offset = -100
-        for message in display_txt:
-            msg_offset = msg_offset + 100
-            ticks_left = display_txt[message]
-            display_txt[message] = display_txt[message] - 1
-            if ticks_left <= 0:
-                del(display_txt[message])
-                redraw_forced = True
-                break
-            else:
-                #clear
-                pos = [25,45+msg_offset]
-                for line in message.split("\n"):
-                    pygame.draw.rect(gameDisplay,background_color,(pos[0]-5,pos[1]-5,display_width -pos[0]*2 ,20))
-                    #Draw
-                    TextRect = text_font.render(line, True, (255, 255, 255))
-                    gameDisplay.blit(TextRect, (pos[0],pos[1]))
-                    #print(f"{message}:{ticks_left}")
-                    pos[1] += 15
+        msg_offset = -15
+        current_msg = get_sys_msg()
+        if current_msg == {} and display_txt != "":
+            print("Redraw room for text change")
+            display_txt = ""
+            redraw_forced = True
+
+        for message in current_msg:
+            msg_offset = msg_offset + 15
+            ticks_left = get_sys_msg_ticks(message)
+            
+            #display_txt[message] = display_txt[message] - 1
+            #clear
+            pos = [25,45+msg_offset]
+            for line in message.split("\n"):
+                pygame.draw.rect(gameDisplay,background_color,(pos[0]-5,pos[1]-5,display_width -pos[0]*2 ,20))
+                #Draw
+                TextRect = text_font.render(line, True, (255, 255, 255))
+                gameDisplay.blit(TextRect, (pos[0],pos[1]))
+                #print(f"{message}:{ticks_left}")
+                pos[1] += 15
+            display_txt = current_msg
 
             
         
@@ -999,6 +996,9 @@ def load_dynamic():
         
 ############################################### 
 setup_sys()
+
+#setup init msg
+write_sys_msg(init_text, 50)
 ###############################################
 #Load in fs level data effects dynamic_fs_levels
 load_dynamic()
