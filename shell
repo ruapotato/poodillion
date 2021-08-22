@@ -244,8 +244,8 @@ def draw_doors():
     return(dir_pos)
 
 
-def setup_life_file(life_file, life_value):
-    data_to_write = f"life:{life_value}\nunder_attack:False"
+def setup_life_file(life_file, life_value, respawn_line):
+    data_to_write = f"life:{life_value}\nunder_attack:False\nrespawn:{respawn_line}"
     with open(life_file, 'w') as fh:
         fh.write(data_to_write)
             
@@ -265,6 +265,12 @@ def process_NPC_line(line):
     #every 40: frog_guy.png: son_of_bob_$RAND: 100% walk 3:     1:  10: 50% 5HP
     when = raw_data[0].strip()
     name = raw_data[2].strip()
+    
+    respawn_data = copy.deepcopy(raw_data)
+    #change life:
+    respawn_data[5] = "$LIFE"
+    respawn_line = "active:" + ":".join(respawn_data[1:])
+    
     img = f"{script_path}/img/{raw_data[1].strip()}"
     npc_imges[img] = pygame.image.load(img).convert()
     
@@ -279,13 +285,29 @@ def process_NPC_line(line):
     
     life = int(raw_data[5].strip())
     life_file = ""
-    if when == "on_enter":
+    if when == "on_enter" or when == "active":
         life_file = f"{chroot_PWD}/{name}"
         #with open(life_file, 'w') as fh:
             #pass
-        setup_life_file(life_file, life)
+        #check for a respawn file
+        if os.path.isfile(life_file):
+            with open(life_file, 'r') as old_life_fh:
+                for line in old_life_fh.readlines():
+                    if line.startswith("life:"):
+                        life = int(line.split(":")[-1].strip())
+                    if line.startswith("respawn:"):
+                        os.remove(life_file)
+                        old_npc_line = ":".join(line.split(":")[1:])
+                        old_npc_line = old_npc_line.replace("$LIFE", str(life))
+                        print(old_npc_line)
+                        process_NPC_line(old_npc_line)
+                        
+                        print(f"Old guy: {old_npc_line}")
+                        return
+            
+        else:
+            setup_life_file(life_file, life, respawn_line)
         when = "active"
-    
     drop_raw = raw_data[6].strip().split(' ')
     #Example data
     #["50%", "5HP"]
