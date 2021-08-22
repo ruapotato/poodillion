@@ -22,7 +22,9 @@ for thing_to_rm in args:
         life = check_for_life(thing_to_rm)
         if life:
             if friendly(thing_to_rm):
-                print(f"rm: cannot hurt ally {thing_to_rm}")
+                msg = f"rm: cannot hurt ally {thing_to_rm}"
+                print(msg)
+                write_sys_msg(msg, 10)
                 continue
             respawn = get_respawn(thing_to_rm)
             #print(f"found life: {thing_to_rm}")
@@ -32,9 +34,15 @@ for thing_to_rm in args:
                 time.sleep(player_attack_wait)
             os.remove(thing_to_rm)
         else:
-            print(f"Not a game file: {thing_to_rm}")
+            msg = f"Not a game file: {thing_to_rm}"
+            print(msg)
+            write_sys_msg(msg, 10)
     else:
         if os.path.isdir(thing_to_rm):
-            print(f"rm: cannot remove '{thing_to_rm}': Is a directory")
+            msg = f"rm: cannot remove '{thing_to_rm}': Is a directory"
+            print(msg)
+            write_sys_msg(msg, 10)
         elif len(thing_to_rm) == 2 and thing_to_rm.startswith("-"):
-            print(f"rm: No unlocked option {thing_to_rm}")
+            msg = f"rm: No unlocked option {thing_to_rm}"
+            print(msg)
+            write_sys_msg(msg, 10)

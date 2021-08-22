@@ -312,7 +312,7 @@ def process_NPC_line(line, is_friend=False):
     chance_drop = drop_raw[0].strip("%")
     if len(drop_raw) > 2:
         drops = " ".join(drop_raw)[3:].strip()
-        drops = drops.replace("\\n", "\n")
+        #drops = drops.replace("\\n", "\n")
     else:
         drops = drop_raw[1]
     print(f"Setup {drops}")
