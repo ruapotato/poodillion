@@ -21,6 +21,7 @@ locked:/3/3
 #room/3:    when:           img:   name:    %  action:damage:life:    % drops
 room:/3:on_enter: ball_boss.png: killer: 100% walk 13:     7:  10: 100% unlock/1
 
+
 #all on path:                   when:           img:     name:    %  action:damage:life:   % drops
 on_path:/1/2/3/1/2/3/1/2/3/:on_enter: ball_boss.png:the_found: 100% walk 10:     7:  10: 70% msg How have you found this path? 
 

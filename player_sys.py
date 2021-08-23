@@ -199,7 +199,7 @@ def setup_sys(resetup=True):
             power_fh.write("100")
         with open(player_can_spawn, 'w+') as spawn_strength_fh:
             #                                 img: name:    % action:damage:life:    % drops
-            spawn_strength_fh.write("frog_guy.png:frog*: 100% walk 3:     1:   3: 100% na")
+            spawn_strength_fh.write("good_frog.png:frog*: 100% walk 3:     1:   3: 100% na")
         with open(player_laser_file, 'w+') as laser_fh:
             laser_fh.write("1")
         with open(player_speed_file, 'w+') as speed_fh:

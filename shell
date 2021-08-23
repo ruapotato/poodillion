@@ -274,7 +274,8 @@ def process_NPC_line(line, is_friend=False):
     #Example data
     #100% walk 3
     change_action = action_raw[0].strip("%")
-    action = f"{action_raw[1]} {action_raw[2]}"
+    action = " ".join(action_raw[1:])
+    action = f"{action_raw[1]} {action}"
     
     damage = int(raw_data[4].strip())
     
@@ -569,6 +570,7 @@ def update_game():
     #Process NPCs
     #print(game_actors)
     new_NPCs = {}
+    
     chroot_PWD = chroot_path + PWD
     for player_name in game_actors:
         status = game_actors[player_name]['when']
@@ -621,8 +623,11 @@ def update_game():
                     if drops.endswith("HP"):
                         life_drop = int(drops.strip("HP"))
                         change_life(life_drop)
-                        #player_life = player_life + life_drop
-                        msg = f"+{life_drop} HP"
+                        if life_drop > 0:
+                            #player_life = player_life + life_drop
+                            msg = f"+{life_drop} HP"
+                        else:
+                            msg = f"-{life_drop} HP"
                         write_sys_msg(msg, 10)
                         print(f"Player life: {player_life}")
                     if drops.startswith("unlock"):
@@ -667,6 +672,9 @@ def update_game():
             action = game_actors[player_name]['action']
             action_chance = game_actors[player_name]['action_chance']
             if did_it_happen(action_chance):
+                if action.startswith("msg"):
+                    msg = " ".join(action.split(" ")[2:])
+                    write_sys_msg(msg, 10)
                 if action.startswith("walk"):
                     if not is_friendly:
                         #check if we are hit
