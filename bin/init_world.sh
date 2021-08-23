@@ -17,7 +17,7 @@ echo -e "\n[Service]\nExecStart=\nExecStart=-/sbin/agetty --noclear --autologin 
 #setup home
 echo "Setting up home"
 mkdir /home/$user
-chown $user:$user /home/$user
+chown -R $user:$user /home/$user
 
 #setup game foder
 mkdir /game
