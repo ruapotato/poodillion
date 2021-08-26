@@ -1,0 +1,5 @@
+#passive:  x:  y:    when:          img:name:                          AI:damage:life:    % drops
+0       :330:200:on_enter:  fun_guy.png: bob: msg Use rm to shoot lasers.\nBe careful who you kill!:     1:   3: 100% open /home/poodillion/cave/door1
+
+#bad:  x:  y:    when:          img:             name:     AI:damage:life:    % drops
+-1  :340:200:on_enter: frog_guy.png: son_of_bob_$RAND: walk 3:     1:  10:  100% open /home/poodillion/cave/door2

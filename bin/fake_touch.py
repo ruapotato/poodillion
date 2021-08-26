@@ -24,18 +24,17 @@ for thing_to_touch in args:
         for spawn_line in get_player_can_spawn():
             raw_spawn_data = spawn_line.split(":")
             #Example data for spawn_line
-            #frog_guy.png:frog*: 100% walk 3:     1:   3: 100% na
+            #1  :100:100:active:frog_guy.png:frog*: 100% walk 3:     1:   3: 100% na
             #get valid_spawn_name_start
-            valid_spawn_name_start = raw_spawn_data[1].strip("*")
+            valid_spawn_name_start = raw_spawn_data[5].strip("*")
             
             #Update file name
-            raw_spawn_data[1] = thing_to_touch.split("/")[-1]
-            start_life = int(raw_spawn_data[4].strip())
+            raw_spawn_data[5] = thing_to_touch.split("/")[-1]
+            start_life = int(raw_spawn_data[8].strip())
 
             #Example valid_spawn_name_start data
             #frog
             spawn_line = ":".join(raw_spawn_data)
-            spawn_line = "active:" + spawn_line
 
             if "/" in thing_to_touch:
                 short_file_name = thing_to_touch.split("/")[-1]
@@ -46,11 +45,12 @@ for thing_to_touch in args:
                 #check if the player has the power to spawn
                 if get_player_power() > cost:
                     change_power(cost * -1)
-                    write_life_file(thing_to_touch, start_life, spawn_line, is_friend=True)
+                    write_life_file(thing_to_touch, start_life, spawn_line)
                     msg = f"Spawned: {short_file_name} (HP:{start_life})"
                 else:
                     msg = "Need more power to spawn!"
                 write_sys_msg(msg, 10)
+                print(msg)
             else:
                 msg = f"touch: Cannot create a/an {short_file_name} just yet."
                 print(msg)

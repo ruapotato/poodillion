@@ -1,7 +1,10 @@
 #chown root ./.spawner
 #chmod 644 ./.spawner
-#   when:          img:             name:    % action:damage:life:    % drops
-on_enter: frog_guy.png:              bob: 100% walk 3:     1:   3: 100% na
-every 40: frog_guy.png: son_of_bob_$RAND: 100% walk 3:     1:  10:  50% 5HP
+#allegiance:star_x:start_y:when:img:name:AI <AI args>:damage:life:% drops
+#bad:  x:  y:    when:          img:             name:     AI:damage:life:    % drops
+-1  :340:200:on_enter: frog_guy.png:              bob: walk 3:     1:   3: 100% na
+-1  :340:200:every 40: frog_guy.png: son_of_bob_$RAND: walk 3:     1:  10:  50% 5HP
+#passive:  x:  y:    when:          img:             name:                         AI:damage:life:    % drops
+0       :330:200:on_enter:  fun_guy.png:              bob: msg Use cd to change rooms:     1:   3: 100% -50HP
 Help_MSG: rm something!
 Help_when_heath_at: 10

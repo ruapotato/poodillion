@@ -244,7 +244,7 @@ def draw_doors():
     return(dir_pos)
 
             
-def process_NPC_line(line, is_friend=False):
+def process_NPC_line(line):
     global script_path
     global npc_imges
     global game_actors
@@ -255,31 +255,42 @@ def process_NPC_line(line, is_friend=False):
     
     raw_data = line.split(":")
     #Example data
-    ##   when:          img:             name:    % action:damage:life:    % drops
+    #allegiance:star_x:start_y:when:img:name:AI <AI args>:damage:life:% drops
+    # bad:  x:  y:    when:          img:             name:     AI:damage:life:    % drops
+    #-1  :100:100:on_enter: frog_guy.png:              bob: walk 3:     1:   3: 100% na
     #on_enter: frog_guy.png:              bob: 100% walk 3:     1:  10: 100% na
     #every 40: frog_guy.png: son_of_bob_$RAND: 100% walk 3:     1:  10: 50% 5HP
-    when = raw_data[0].strip()
-    name = raw_data[2].strip()
+    allegiance = int(raw_data[0].strip())
+    x = raw_data[1].strip()
+    y = raw_data[2].strip()
+    try:
+        x = int(x)
+        y = int(y)
+        start_pos = [x,y]
+    except Exception:
+        print("Using random start for NPC")
+        start_pos = [display_width-50,int(display_height/(int(random.randint(1,200)/100)+2))]
+    when = raw_data[3].strip()
+    name = raw_data[5].strip()
     
     respawn_data = copy.deepcopy(raw_data)
     #change life:
-    respawn_data[5] = "$LIFE"
-    respawn_line = "active:" + ":".join(respawn_data[1:])
+    respawn_data[8] = "$LIFE"
+    respawn_line = ":".join(respawn_data)
     
-    img = f"{script_path}/img/{raw_data[1].strip()}"
+    img = f"{script_path}/img/{raw_data[4].strip()}"
     npc_imges[img] = pygame.image.load(img).convert()
     
     
-    action_raw = raw_data[3].strip().split(' ')
+    AI_raw = raw_data[6].strip().split(' ')
     #Example data
-    #100% walk 3
-    change_action = action_raw[0].strip("%")
-    action = " ".join(action_raw[1:])
-    action = f"{action_raw[1]} {action}"
+    #walk 3
+    AI_args = " ".join(AI_raw[1:])
+    AI = AI_raw[0]
     
-    damage = int(raw_data[4].strip())
+    damage = int(raw_data[7].strip())
     
-    life = int(raw_data[5].strip())
+    life = int(raw_data[8].strip())
     life_file = ""
     if when == "on_enter" or when == "active":
         life_file = f"{chroot_PWD}/{name}"
@@ -297,40 +308,41 @@ def process_NPC_line(line, is_friend=False):
                         old_npc_line = old_npc_line.replace("$LIFE", str(life))
                         print(old_npc_line)
                         
-                        process_NPC_line(old_npc_line, is_friend=is_friend)
+                        process_NPC_line(old_npc_line)
                         
                         print(f"Old guy: {old_npc_line}")
                         return
             
         else:
-            write_life_file(life_file, life, respawn_line, is_friend=is_friend)
+            write_life_file(life_file, life, respawn_line)
         when = "active"
-    drop_raw = raw_data[6].strip().split(' ')
+    drop_raw = raw_data[9].strip().split(' ')
     #Example data
     #["50%", "5HP"]
     #["100%", "na"]
     #["100%", "msg", "str_part", "str_part]
+    #['100%', 'open', '/home/poodillion/cave/door2']
     chance_drop = drop_raw[0].strip("%")
     if len(drop_raw) > 2:
-        drops = " ".join(drop_raw)[3:].strip()
+        drops = " ".join(drop_raw[1:]).strip()
         #drops = drops.replace("\\n", "\n")
     else:
         drops = drop_raw[1]
     print(f"Setup {drops}")
     
-    start_pos = [display_width-50,int(display_height/(int(random.randint(1,200)/100)+2))]
+    
     game_actors[name] = {"when":when,
                             "img":img,
                             "name":name,
-                            "action_chance":change_action,
-                            "action":action,
+                            "AI":AI,
+                            "AI_args":AI_args,
                             "damage":damage,
                             "drop_chance":chance_drop,
                             "drops":drops,
                             "pos":start_pos,
                             "lastPos": copy.deepcopy(start_pos),
                             "life_file": life_file,
-                            "is_friend": is_friend}
+                            "allegiance": allegiance}
 
 def load_player_spawners(PWD, load_only=False):
     global chroot_path
@@ -362,7 +374,7 @@ def load_player_spawners(PWD, load_only=False):
                 is_friend = friendly(file_name)
                 print(f"What do you think? friend: {is_friend}")
                 print(respawn)
-                process_NPC_line(respawn, is_friend=is_friend)
+                process_NPC_line(respawn)
 
 
 def load_spawners(PWD):
@@ -382,7 +394,7 @@ def load_spawners(PWD):
             for line in fh.readlines():
                 if line.startswith("#"):
                     continue
-                if line.startswith("on_enter") or line.startswith("every"):
+                if "on_enter" in line or "every" in line:
                     process_NPC_line(line)
     load_player_spawners(PWD)
         
@@ -554,6 +566,7 @@ def update_game():
     global player_target
     global player_speed
     global player_image
+    global redraw_forced
     
     decrement_sys_msgs()
     #Move player if needed
@@ -609,9 +622,10 @@ def update_game():
         if status == "active":
             #print("Active NPC")
             life_file = game_actors[player_name]['life_file']
-            is_friendly = game_actors[player_name]['is_friend']
+            allegiance = game_actors[player_name]['allegiance']
+            #check if NPC killed
             if not os.path.isfile(life_file):
-                print(f"Killed {life_file}")
+                print(f"Killed {life_file}| Hmmm:{drop_chance} drops:{drops}")
                 if did_it_happen(drop_chance):
                     #examples drops
                     #5HP
@@ -637,7 +651,19 @@ def update_game():
                         full_path = f"{chroot_path}{current_level_base}{short_name}"
                         print(f"Unlock: {full_path}")
                         unlock_door(full_path)
-                
+                    #Like unlock expect takes a full path
+                    if drops.startswith("open"):
+                        redraw_forced = True
+                        path = drops[5:]
+
+                        full_path = f"{chroot_path}{path}"
+                        if os.path.isdir(full_path):
+                            msg = f"{path} open!"
+                            unlock_door(full_path)
+                        else:
+                            msg = f"Cannot unlock unknown or undiscovered path: \n  {full_path}"
+                        write_sys_msg(msg, 25)
+
                 #Setup needed data
                 img = game_actors[player_name]['img']
                 img = npc_imges[img]
@@ -664,44 +690,45 @@ def update_game():
                         #ative under_attack
                         FIRE(pos, clean_up_and_display=False)
             
-            if is_friendly:
+            if allegiance > 0:
                 target = [200,200]
             else:
                 target = player_xy
             pos = game_actors[player_name]['pos']
-            action = game_actors[player_name]['action']
-            action_chance = game_actors[player_name]['action_chance']
-            if did_it_happen(action_chance):
-                if action.startswith("msg"):
-                    msg = " ".join(action.split(" ")[2:])
-                    write_sys_msg(msg, 10)
-                if action.startswith("walk"):
-                    if not is_friendly:
-                        #check if we are hit
-                        if abs(pos[0] - player_xy[0]) < 25 and abs(pos[1] - player_xy[1]) < 25:
-                            change_life(damage * -1)
-                            #player_life = player_life - damage
-                            if get_player_life() <= 0:
-                                #Reset
-                                print("Player Dead!")
-                                text = "Better luck next time!"
-                                notify(text)
-                                quit()
-                            print("Hit")
-                            continue
-                    speed = int(action.split(" ")[-1])
-                    new_pos = get_point_along(pos, target, speed)
-                    #x_delta = pos[0] - player_xy[0]
-                    #y_delta = pos[1] - player_xy[1]
-                    
-                    #total_delta = x_delta + y_delta
-                    #x_speed = (speed/total_delta)*x_delta
-                    #y_speed = (speed/total_delta)*y_delta
-                    
-                    game_actors[player_name]['lastPos'] = copy.deepcopy(game_actors[player_name]['pos'])
-                    game_actors[player_name]['pos'] = new_pos
-                    #print(f"Moving with speed of {speed} {x_speed} {y_speed}")
-                    
+            AI = game_actors[player_name]['AI']
+            AI_args = game_actors[player_name]['AI_args']
+            if AI.startswith("msg"):
+                msg = AI_args
+                write_sys_msg(msg, 10)
+            #If this is a walk AI
+            if AI.startswith("walk"):
+                #If this is a bad NPC
+                if allegiance < 0:
+                    #check if we are hit
+                    if abs(pos[0] - player_xy[0]) < 25 and abs(pos[1] - player_xy[1]) < 25:
+                        change_life(damage * -1)
+                        #player_life = player_life - damage
+                        if get_player_life() <= 0:
+                            #Reset
+                            print("Player Dead!")
+                            text = "Better luck next time!"
+                            notify(text)
+                            quit()
+                        print("Hit")
+                        continue
+                speed = int(AI_args.strip())
+                new_pos = get_point_along(pos, target, speed)
+                #x_delta = pos[0] - player_xy[0]
+                #y_delta = pos[1] - player_xy[1]
+                
+                #total_delta = x_delta + y_delta
+                #x_speed = (speed/total_delta)*x_delta
+                #y_speed = (speed/total_delta)*y_delta
+                
+                game_actors[player_name]['lastPos'] = copy.deepcopy(game_actors[player_name]['pos'])
+                game_actors[player_name]['pos'] = new_pos
+                #print(f"Moving with speed of {speed} {x_speed} {y_speed}")
+                
             #print(pos)
     #add new NPCs outside of above eath loop
     for new_npc_name in new_NPCs:

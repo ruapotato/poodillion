@@ -53,15 +53,8 @@ cp ../player_sys.py $shell_root/usr/lib/python3.9/
 mv $shell_root/usr/bin/touch $shell_root/root/touch
 cp ./fake_touch.py $shell_root/usr/bin/touch
 
-#setup defualt .spawners
-mkdir -p $shell_root/home/poodillion/
-echo "#   when:          img:             name:    %                     action:damage:life:    % drops"> $shell_root/home/poodillion/.spawner
-echo "on_enter:  fun_guy.png:              bob: 100% msg Use cd to change rooms:     1:   3: 100% -50HP">> $shell_root/home/poodillion/.spawner
-
-#setup ~/m
-mkdir -p $shell_root/home/poodillion/mushroom
-echo "#   when:         img:  name:    %  action:damage:life:    % drops" > $shell_root/home/poodillion/mushroom/.spawner
-echo "on_enter: fun_guy.png:  bob2: 100% msg rm will kill enemies.:     1:   3: 100% msg be careful who you kill!" >> $shell_root/home/poodillion/mushroom/.spawner
+#setup overlay
+cp -ra ../overlay_fs/* $shell_root/
 
 echo "Running setup script"
 cp ./init_world.sh $shell_root

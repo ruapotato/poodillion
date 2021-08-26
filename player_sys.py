@@ -33,9 +33,9 @@ def change_life(amount):
     change_sys_file(player_life_file, amount)
 
 
-def write_life_file(path, value, respawn, is_friend=False, under_attack=False):
+def write_life_file(path, value, respawn, under_attack=False):
     #print(f"{path} Life:{value}")
-    data_to_write = f"life:{value}\nunder_attack:{under_attack}\nis_friend:{is_friend}\nrespawn:{respawn}"
+    data_to_write = f"life:{value}\nunder_attack:{under_attack}\nrespawn:{respawn}"
     with open(path, 'w') as fh:
         fh.write(data_to_write)
 
@@ -48,14 +48,16 @@ def check_for_life(path):
             return(False)
 
 
-def friendly(path):
+def friendly(path, friend=1):
     with open(path) as fh:
         test_lines = fh.readlines()
         for line in test_lines:
-            if line.startswith("is_friend:"):
-                true_or_false = line.split(":")[-1].strip()
-                true_or_false = true_or_false == "True"
-                return(true_or_false)
+            if line.startswith("respawn:"):
+                allegiance = int(line.split(":")[1])
+                if allegiance >= friend:
+                    return(True)
+                else:
+                    return(False)
     #Should not happen
     return(False)
 
@@ -80,6 +82,7 @@ def decrement_sys_msgs(by=1):
 
 def write_sys_msg(msg, ticks):
     global sys_msg_file
+    msg = msg.replace("\\n","\n")
     unlock_door(sys_path)
     with open(sys_msg_file, 'w+') as fh:
         for line in msg.split('\n'):
@@ -198,8 +201,8 @@ def setup_sys(resetup=True):
         with open(player_power_file, 'w+') as power_fh:
             power_fh.write("100")
         with open(player_can_spawn, 'w+') as spawn_strength_fh:
-            #                                 img: name:    % action:damage:life:    % drops
-            spawn_strength_fh.write("good_frog.png:frog*: 100% walk 3:     1:   3: 100% na")
+            #                     good:  x:  y:status:          img: name:    AI:damage:life:    % drops
+            spawn_strength_fh.write("1:100:100:active:good_frog.png:frog*:walk 3:     1:   3: 100% na")
         with open(player_laser_file, 'w+') as laser_fh:
             laser_fh.write("1")
         with open(player_speed_file, 'w+') as speed_fh:
