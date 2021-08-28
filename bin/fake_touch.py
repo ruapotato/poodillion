@@ -49,12 +49,12 @@ for thing_to_touch in args:
                     msg = f"Spawned: {short_file_name} (HP:{start_life})"
                 else:
                     msg = "Need more power to spawn!"
-                write_sys_msg(msg, 10)
+                write_sys_msg(msg, 25)
                 print(msg)
             else:
                 msg = f"touch: Cannot create a/an {short_file_name} just yet."
                 print(msg)
-                write_sys_msg(msg, 10)
+                write_sys_msg(msg, 25)
 
         #print(f"File found: {thing_to_touch}")
     #This is a file
@@ -64,6 +64,6 @@ for thing_to_touch in args:
                 life = check_for_life(thing_to_touch)
                 change_life(-10)
                 msg = f"touch: '{thing_to_touch}' is a bad -10 HP"
-                write_sys_msg(msg, 10)
+                write_sys_msg(msg, 25)
                 print(msg)
                 

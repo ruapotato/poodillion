@@ -74,7 +74,6 @@ def decrement_sys_msgs(by=1):
             if int(ticks) >= 1:
                 rewrite_line = f"{msg}:{ticks}\n"
                 rewrite = rewrite + rewrite_line
-    print(f"Rewrite: {rewrite}")
     with open(sys_msg_file, 'w') as fh:
         fh.write(rewrite.strip())
         #print(rewrite)

@@ -130,6 +130,21 @@ def clear_img(img, pos, color=(255,255,255)):
     new_pos = [pos[0] - int(img.get_width()/2), pos[1] - int(img.get_height()/2)]
     pygame.draw.rect(gameDisplay,color,(new_pos[0],new_pos[1],img.get_width(),img.get_height()))
 
+def draw_name(text, pos, clear=False):
+    global background_color
+    text_size = 7
+    size = len(text) * text_size
+    
+    #setup offset
+    pos = [pos[0]-(size/2), pos[1]]
+    
+    if not clear:
+        pygame.draw.rect(gameDisplay,background_color,(pos[0],pos[1],size,15))
+        TextRect = text_font.render(text, True, (255, 255, 255))
+        gameDisplay.blit(TextRect, pos)
+    else:
+        pygame.draw.rect(gameDisplay,(255,255,255),(pos[0],pos[1],size,15))
+
     
 def can_move_to(test_pos, img):
     global player_image
@@ -423,15 +438,23 @@ def draw_npc():
         status = game_actors[player_name]['when']
         if status == "active":
             #print("draw NPC")
-            #Clear old
             img = game_actors[player_name]['img']
             img = npc_imges[img]
-            pos = game_actors[player_name]['lastPos']
-            clear_img(img, pos)
+            name = game_actors[player_name]['life_file']
+            name = name.split("/")[-1]
+            name_height_offset = int((img.get_height()/2) + 15) * -1
+            
+            #Clear old
+            old_pos = game_actors[player_name]['lastPos']
+            old_name_pos = [old_pos[0],old_pos[1]+name_height_offset]
+            draw_name(name,old_name_pos, clear=True)
+            clear_img(img, old_pos)
             #pygame.draw.rect(gameDisplay,(255,255,255),(pos[0],pos[1],img.get_width(),img.get_height()))
             #Draw new
             pos = game_actors[player_name]['pos']
+            name_pos = [pos[0],pos[1]+name_height_offset]
             draw_img(img, pos)
+            draw_name(name,name_pos)
             #gameDisplay.blit(img, pos)
             
 
@@ -650,7 +673,7 @@ def update_game():
                     #msg some string to say
                     if drops.startswith("msg"):
                         msg = drops[3:]
-                        write_sys_msg(msg, 35)
+                        write_sys_msg(msg, 60)
                     if drops.endswith("HP"):
                         life_drop = int(drops.strip("HP"))
                         change_life(life_drop)

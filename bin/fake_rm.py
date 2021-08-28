@@ -24,7 +24,7 @@ for thing_to_rm in args:
             if friendly(thing_to_rm):
                 msg = f"rm: cannot hurt ally {thing_to_rm}"
                 print(msg)
-                write_sys_msg(msg, 10)
+                write_sys_msg(msg, 25)
                 continue
             respawn = get_respawn(thing_to_rm)
             #print(f"found life: {thing_to_rm}")
@@ -36,13 +36,13 @@ for thing_to_rm in args:
         else:
             msg = f"Not a game file: {thing_to_rm}"
             print(msg)
-            write_sys_msg(msg, 10)
+            write_sys_msg(msg, 25)
     else:
         if os.path.isdir(thing_to_rm):
             msg = f"rm: cannot remove '{thing_to_rm}': Is a directory"
             print(msg)
-            write_sys_msg(msg, 10)
+            write_sys_msg(msg, 25)
         elif len(thing_to_rm) == 2 and thing_to_rm.startswith("-"):
             msg = f"rm: No unlocked option {thing_to_rm}"
             print(msg)
-            write_sys_msg(msg, 10)
+            write_sys_msg(msg, 25)
