@@ -130,6 +130,20 @@ def clear_img(img, pos, color=(255,255,255)):
     new_pos = [pos[0] - int(img.get_width()/2), pos[1] - int(img.get_height()/2)]
     pygame.draw.rect(gameDisplay,color,(new_pos[0],new_pos[1],img.get_width(),img.get_height()))
 
+    
+def can_move_to(test_pos, img):
+    global player_image
+    x, y = test_pos
+    wall_size = 20
+    height = img.get_height()
+    width = img.get_width()
+    
+    if x < wall_size+(width/2) or x > display_width-wall_size-(width/2):
+        return(False)
+    if y < wall_size+(height/2) or y > display_height-wall_size-(height/2):
+        return(False)
+    return(True)
+
 def action_cd(new_xy, reset_player_pos=True):
     global gameDisplay
     global player_xy
@@ -577,7 +591,9 @@ def update_game():
         clear_img(player_image, player_xy)
         #pygame.draw.rect(gameDisplay,(255,255,255),(player_xy[0],player_xy[1],player_image.get_width(),player_image.get_height()))
         #update pos
-        player_xy = get_point_along(player_xy, player_target, get_player_speed())
+        player_xy_test_point = get_point_along(player_xy, player_target, get_player_speed())
+        if can_move_to(player_xy_test_point, player_image):
+            player_xy = player_xy_test_point
         #Redraw player
         draw_img(player_image, player_xy)
     
