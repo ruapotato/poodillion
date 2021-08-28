@@ -650,7 +650,7 @@ def update_game():
                     #msg some string to say
                     if drops.startswith("msg"):
                         msg = drops[3:]
-                        write_sys_msg(msg, 25)
+                        write_sys_msg(msg, 35)
                     if drops.endswith("HP"):
                         life_drop = int(drops.strip("HP"))
                         change_life(life_drop)
@@ -659,12 +659,12 @@ def update_game():
                             msg = f"+{life_drop} HP"
                         else:
                             msg = f"-{life_drop} HP"
-                        write_sys_msg(msg, 10)
+                        write_sys_msg(msg, 20)
                         print(f"Player life: {player_life}")
                     if drops.startswith("unlock"):
                         short_name = drops.split("unlock")[-1]
                         msg = f"A door has Opened!\nFind your way to:\n  {current_level_base}{short_name}"
-                        write_sys_msg(msg, 25)
+                        write_sys_msg(msg, 45)
                         full_path = f"{chroot_path}{current_level_base}{short_name}"
                         print(f"Unlock: {full_path}")
                         unlock_door(full_path)
@@ -679,7 +679,7 @@ def update_game():
                             unlock_door(full_path)
                         else:
                             msg = f"Cannot unlock unknown or undiscovered path: \n  {full_path}"
-                        write_sys_msg(msg, 25)
+                        write_sys_msg(msg, 45)
 
                 #Setup needed data
                 img = game_actors[player_name]['img']
@@ -716,7 +716,7 @@ def update_game():
             AI_args = game_actors[player_name]['AI_args']
             if AI.startswith("msg"):
                 msg = AI_args
-                write_sys_msg(msg, 10)
+                write_sys_msg(msg, 1)
             #If this is a walk AI
             if AI.startswith("walk"):
                 #If this is a bad NPC
@@ -839,18 +839,42 @@ def main_interface():
                 quit()
             if event.type == pygame.KEYDOWN:
                 key = event.unicode
-                composit_process(key)
-                #print(key)
-                #Update prompt and std_out
-                time.sleep(0.01)
-                std_raw = get_tty_out()
-                prompt_text = std_raw[0]
-                std_out = std_raw[1]
-                #print(std_out)
-                #Update PWD
-                PWD = get_PWD()
-                #print(PWD)
-                draw_prompt(prompt_text)
+                keys = pygame.key.get_pressed()
+                arrow_pressed = False
+                # if left arrow key is pressed 
+                if keys[pygame.K_LEFT]:
+                    player_target[0] = 0
+                    arrow_pressed = True
+            
+                # if left arrow key is pressed
+                if keys[pygame.K_RIGHT]:
+                    player_target[0] = display_width
+                    arrow_pressed = True
+            
+                # if left arrow key is pressed
+                if keys[pygame.K_UP]:
+                    player_target[1] = 0
+                    arrow_pressed = True
+            
+                # if left arrow key is pressed
+                if keys[pygame.K_DOWN] :
+                    player_target[1] = display_height
+                    arrow_pressed = True
+                
+                #Pass into TTY
+                if not arrow_pressed:
+                    composit_process(key)
+                    #print(key)
+                    #Update prompt and std_out
+                    time.sleep(0.01)
+                    std_raw = get_tty_out()
+                    prompt_text = std_raw[0]
+                    std_out = std_raw[1]
+                    #print(std_out)
+                    #Update PWD
+                    PWD = get_PWD()
+                    #print(PWD)
+                    draw_prompt(prompt_text)
 
 
         #redraw room
