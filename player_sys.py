@@ -206,7 +206,7 @@ def setup_sys(resetup=True):
         with open(player_laser_file, 'w+') as laser_fh:
             laser_fh.write("1")
         with open(player_speed_file, 'w+') as speed_fh:
-            speed_fh.write("5")
+            speed_fh.write("3")
         with open(sys_msg_file, 'w+') as msg_fh:
             msg_fh.write("")
     

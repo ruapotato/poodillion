@@ -18,14 +18,14 @@ locked:/3/2
 locked:/3/3
 
 
-#room/3:bad:  x:  y:    when:           img:   name:      AI:damage:life:    % drops
-room:/3:-1 :340:200:on_enter: ball_boss.png: killer: walk 13:     7:  10: 100% unlock/1
+#room/3:bad:  x:  y:    when:           img:   name:     AI:damage:life:    % drops
+room:/3:-1 :340:200:on_enter: ball_boss.png: killer: walk 4:     7:  10: 100% unlock/1
 
 #all on path:               bad:  x:  y:    when:           img:     name:      AI:damage:life:   % drops
-on_path:/1/2/3/1/2/3/1/2/3/:-1 :340:200:on_enter: ball_boss.png:the_found: walk 10:     7:  10: 70% msg How have you found this path? 
+on_path:/1/2/3/1/2/3/1/2/3/:-1 :340:200:on_enter: ball_boss.png:the_found: walk 3:     7:  10: 70% msg How have you found this path? 
 
 #all of this path:           bad:  x:  y:    when:          img:     name:     AI:damage:life:   % drops
-off_path:/1/2/3/1/2/3/1/2/3/:-1 :340:200:on_enter: frog_guy.png: the_lost: walk 8:     3:  10: 70% msg Feels like the same badguy...\nHmmmm...
+off_path:/1/2/3/1/2/3/1/2/3/:-1 :340:200:on_enter: frog_guy.png: the_lost: walk 3:     3:   7: 70% msg Feels like the same badguy...\nHmmmm...
 
 #Boss fight unlocks 1st touch command
 #room:                    bad:  x:  y:    when:           img:              name:    AI:damage:life:    % drops

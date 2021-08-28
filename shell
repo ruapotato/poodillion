@@ -46,6 +46,7 @@ total_power = 0
 player_power = total_power
 dynamic_fs_levels = {}
 init_text = "Enter your password in the pkexec window\nThen press any key to continue..."
+fps = 20
 #                   Text:Time in ticks
 #display_txt = {init_text:50}
 
@@ -435,7 +436,7 @@ def FIRE(pos, clean_up_and_display=True):
     pygame.display.update()
     
     if clean_up_and_display:
-        clock.tick(6)
+        clock.tick(fps)
         #Clear line
         pygame.draw.line(gameDisplay, (255,255,255), (fire_pos[0], fire_pos[1]), (pos[0], pos[1]), 4)
     
@@ -998,7 +999,7 @@ def main_interface():
         #print(game_tick)
         #print("Tick")
         pygame.display.update()
-        clock.tick(6)
+        clock.tick(fps)
 
 def view_tty_set_true():
     global view_tty
