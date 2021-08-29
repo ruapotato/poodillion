@@ -91,6 +91,18 @@ def write_sys_msg(msg, ticks):
             fh.write(f"{line}:{ticks}\n")
     lock_away(sys_path)
 
+
+#            good:  x:  y:status:          img: name:    AI:damage:life:    % drops
+#line Example: "1:100:100:active:good_frog.png:frog*:walk 3:     1:   3: 100% na"
+def write_player_spawn_power(line):
+    global player_can_spawn
+    unlock_door(sys_path)
+    with open(player_can_spawn, 'w+') as spawn_strength_fh:
+        spawn_strength_fh.write(line + "\n")
+    lock_away(sys_path)
+
+
+
 def get_sys_msg_ticks(target_msg):
     global sys_msg_file
     unlock_door(sys_path)
@@ -203,8 +215,9 @@ def setup_sys(resetup=True):
         with open(player_power_file, 'w+') as power_fh:
             power_fh.write("100")
         with open(player_can_spawn, 'w+') as spawn_strength_fh:
-            #                     good:  x:  y:status:          img: name:    AI:damage:life:    % drops
-            spawn_strength_fh.write("1:100:100:active:good_frog.png:frog*:walk 3:     1:   3: 100% na")
+            #                      good:  x:  y:status:          img: name:    AI:damage:life:    % drops
+            #spawn_strength_fh.write("1:100:100:active:good_frog.png:frog*:walk 3:     1:   3: 100% na")
+            spawn_strength_fh.write("")
         with open(player_laser_file, 'w+') as laser_fh:
             laser_fh.write("1")
         with open(player_speed_file, 'w+') as speed_fh:

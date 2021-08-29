@@ -743,7 +743,18 @@ def update_game():
                         else:
                             msg = f"Cannot unlock unknown or undiscovered path: \n  {full_path}"
                         write_sys_msg(msg, 65)
-
+                    if drops == "touch_frog_pow":
+                        #     good:  x:  y:status:          img: name:    AI:damage:life:    % drops
+                        power = "1:100:100:active:good_frog.png:frog*:walk 3:     1:   3: 100% na"
+                        write_player_spawn_power(power)
+                        msg = "You can now spawn frogs with:\ntrouch frog_name"
+                        write_sys_msg(msg, 65)
+                    if drops == "touch_frog_pow_plus":
+                        #     good:  x:  y:status:           img:  name:    AI:damage:life:    % drops
+                        power = "1:100:100:active:power_frog.png:pfrog*:walk 3:     1:  10: 100% na"
+                        write_player_spawn_power(power)
+                        msg = "You can now spawn (powerful) frogs with:\ntrouch pfrog_name"
+                        write_sys_msg(msg, 65)
                 #Setup needed data
                 img = game_actors[player_name]['img']
                 img = npc_imges[img]

@@ -24,8 +24,8 @@ on_path:/1/2/3/1/2/3/1/2/3/:-1 :340:200:on_enter: ball_boss.png:the_found: walk 
 off_path:/1/2/3/1/2/3/1/2/3/:-1 :340:200:on_enter: frog_guy.png: the_lost: walk 3:     3:   7: 70% msg Feels like the same badguy...\nHmmmm...
 
 #Boss fight unlocks 1st touch command
-#room:                    bad:  x:  y:    when:           img:              name:    AI:damage:life:    % drops
-room:/1/2/3/1/2/3/1/2/3/1:-1 :340:200:on_enter: boss_frog.png: touchy_boss:walk 2:    14: 100: 100% touch_frog_pow
+#room:                    bad:  x:  y:    when:           img:             name:    AI:damage:life:    % drops
+room:/1/2/3/1/2/3/1/2/3/1:-1 :340:200:on_enter: boss_frog.png:      touchy_boss:walk 2:    14: 100: 100% touch_frog_pow
 room:/3/2/1/3/2/1/3/2/1/3:-1 :340:200:on_enter:power_frog.png: touchy_boss_plus:walk 2:    14: 200: 100% touch_frog_pow_plus
 
 
