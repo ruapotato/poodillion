@@ -8,15 +8,11 @@ depth:10
 #all_rooms:every 20: frog_guy.png: son_of_bob_$RAND: walk 10:     3:  10: 100% na
 
 #Setup locked paths:
+#1 unlocked by overlay ~/depths/keeper/.spawner
 locked:/1
 locked:/2
-
-
-
-locked:/3/1
-locked:/3/2
-locked:/3/3
-
+#3 unlocked by mirror_path_frog
+locked:/3
 
 #room/3:bad:  x:  y:    when:           img:   name:     AI:damage:life:    % drops
 #room:/3:-1 :340:200:on_enter: ball_boss.png: killer: walk 4:     7:  10: 100% unlock/1
@@ -29,5 +25,10 @@ off_path:/1/2/3/1/2/3/1/2/3/:-1 :340:200:on_enter: frog_guy.png: the_lost: walk 
 
 #Boss fight unlocks 1st touch command
 #room:                    bad:  x:  y:    when:           img:              name:    AI:damage:life:    % drops
-room:/1/2/3/1/2/3/1/2/3/1:-1 :340:200:on_enter: boss_frog.png: touchy_boss_$RAND:walk 2:    14: 100: 100% touch_frog_pow
-room:/1/2/3:-1 :340:200:on_enter: boss_frog.png: touchy_boss_$RAND:walk 2:    14: 100: 100% touch_frog_pow
+room:/1/2/3/1/2/3/1/2/3/1:-1 :340:200:on_enter: boss_frog.png: touchy_boss:walk 2:    14: 100: 100% touch_frog_pow
+room:/3/2/1/3/2/1/3/2/1/3:-1 :340:200:on_enter:power_frog.png: touchy_boss_plus:walk 2:    14: 200: 100% touch_frog_pow_plus
+
+
+#Unlocks mirror room 3/2/1/3...
+#room:                bad:  x:  y:    when:            img:             name:    AI:damage:life:    % drops
+room:/1/2/3/1/2/3/1/2:-1 :340:200:on_enter: power_frog.png: mirror_path_frog:walk 3:    10:  10: 100% unlock/3

@@ -47,6 +47,7 @@ player_power = total_power
 dynamic_fs_levels = {}
 init_text = "Enter your password in the pkexec window\nThen press any key to continue..."
 fps = 20
+files_processed = []
 #                   Text:Time in ticks
 #display_txt = {init_text:50}
 
@@ -426,7 +427,7 @@ def load_player_spawners(PWD, load_only=False):
                 
                 is_friend = friendly(file_name)
                 print(f"What do you think? friend: {is_friend}")
-                print(f"Potato {load_only}")
+                #print(f"Potato {load_only}")
                 print(respawn)
                 process_NPC_line(respawn)
 
@@ -879,6 +880,7 @@ def main_interface():
     global player_target
     global player_start_pos
     global files_processed
+    global pre_game
     
     running = True
     
@@ -917,25 +919,27 @@ def main_interface():
                 key = event.unicode
                 keys = pygame.key.get_pressed()
                 arrow_pressed = False
-                # if left arrow key is pressed 
-                if keys[pygame.K_LEFT]:
-                    player_target[0] = 0
-                    arrow_pressed = True
-            
-                # if left arrow key is pressed
-                if keys[pygame.K_RIGHT]:
-                    player_target[0] = display_width
-                    arrow_pressed = True
-            
-                # if left arrow key is pressed
-                if keys[pygame.K_UP]:
-                    player_target[1] = 0
-                    arrow_pressed = True
-            
-                # if left arrow key is pressed
-                if keys[pygame.K_DOWN] :
-                    player_target[1] = display_height
-                    arrow_pressed = True
+                
+                if not pre_game:
+                    # if left arrow key is pressed 
+                    if keys[pygame.K_LEFT]:
+                        player_target[0] = 0
+                        arrow_pressed = True
+                
+                    # if left arrow key is pressed
+                    if keys[pygame.K_RIGHT]:
+                        player_target[0] = display_width
+                        arrow_pressed = True
+                
+                    # if left arrow key is pressed
+                    if keys[pygame.K_UP]:
+                        player_target[1] = 0
+                        arrow_pressed = True
+                
+                    # if left arrow key is pressed
+                    if keys[pygame.K_DOWN] :
+                        player_target[1] = display_height
+                        arrow_pressed = True
                 
                 #Pass into TTY
                 if not arrow_pressed:
@@ -1039,7 +1043,7 @@ def main_interface():
         
         
         #If in draw tty mode:
-        if view_tty or pre_game:
+        if view_tty:
             std_raw = get_tty_out()
             prompt_text = std_raw[0]
             std_out = std_raw[1]
@@ -1087,7 +1091,7 @@ def main_interface():
         mouse_pos = pygame.mouse.get_pos()
         click = pygame.mouse.get_pressed()
         #if tap down
-        if click[0] == 1:
+        if click[0] == 1 and not pre_game:
             x,y = mouse_pos
             player_target = [x,y]
             #print(player_target)
@@ -1121,6 +1125,11 @@ def main_interface():
 def view_tty_set_true():
     global view_tty
     global player_power
+    global pre_game
+    
+    if pre_game:
+        view_tty = True
+        return
     
     cost = 1
     if get_player_power() >= cost:

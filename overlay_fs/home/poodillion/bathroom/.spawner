@@ -1,6 +1,6 @@
 #bad:  x:  y:     when:          img:          name:     AI:damage:  life:    % drops
--1  :340:200:every 390: frog_guy.png: hp_frog_$RAND: walk 3:     1:     5:  100% 5HP
+-1  :340:200:every 390: frog_guy.png: hp_frog_$RAND: walk 1:     1:     5:  100% 5HP
 
 
 #bad:  x:  y:     when:          img:           name:     AI:damage:  life:    % drops
--1  :340:250:every 470: frog_guy.png: pow_frog_$RAND: walk 3:     1:     5:  100% 5POW
+-1  :340:250:every 470: frog_guy.png: pow_frog_$RAND: walk 1:     1:     5:  100% 5POW
