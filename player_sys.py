@@ -40,6 +40,8 @@ def write_life_file(path, value, respawn, under_attack=False):
         fh.write(data_to_write)
 
 def check_for_life(path):
+    if not os.path.isfile(path):
+        return(False)
     with open(path) as fh:
         test_line = fh.readline()
         if test_line.startswith("life:"):
@@ -83,7 +85,8 @@ def write_sys_msg(msg, ticks):
     global sys_msg_file
     msg = msg.replace("\\n","\n")
     unlock_door(sys_path)
-    with open(sys_msg_file, 'w+') as fh:
+    
+    with open(sys_msg_file, 'a') as fh:
         for line in msg.split('\n'):
             fh.write(f"{line}:{ticks}\n")
     lock_away(sys_path)
@@ -114,8 +117,8 @@ def get_sys_msg():
         for line in fh.readlines():
             if line == "" or line.startswith("#"):
                 continue
-            print(line)
-            print(line)
+            #print(line)
+            #print(line)
             msg, ticks = split_sys_msg(line)
             return_data[msg] = ticks
     lock_away(sys_path)

@@ -1,0 +1,2 @@
+#bad:  x:  y:    when:          img:             name:     AI:damage:life:    % drops
+-1  :340:200:on_enter: frog_guy.png: son_of_bob_$RAND: walk 3:     1:  15:  100% na

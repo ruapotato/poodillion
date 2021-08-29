@@ -19,7 +19,7 @@ locked:/3/3
 
 
 #room/3:bad:  x:  y:    when:           img:   name:     AI:damage:life:    % drops
-room:/3:-1 :340:200:on_enter: ball_boss.png: killer: walk 4:     7:  10: 100% unlock/1
+#room:/3:-1 :340:200:on_enter: ball_boss.png: killer: walk 4:     7:  10: 100% unlock/1
 
 #all on path:               bad:  x:  y:    when:           img:     name:      AI:damage:life:   % drops
 on_path:/1/2/3/1/2/3/1/2/3/:-1 :340:200:on_enter: ball_boss.png:the_found: walk 3:     7:  10: 70% msg How have you found this path? 
@@ -30,3 +30,4 @@ off_path:/1/2/3/1/2/3/1/2/3/:-1 :340:200:on_enter: frog_guy.png: the_lost: walk 
 #Boss fight unlocks 1st touch command
 #room:                    bad:  x:  y:    when:           img:              name:    AI:damage:life:    % drops
 room:/1/2/3/1/2/3/1/2/3/1:-1 :340:200:on_enter: boss_frog.png: touchy_boss_$RAND:walk 2:    14: 100: 100% touch_frog_pow
+room:/1/2/3:-1 :340:200:on_enter: boss_frog.png: touchy_boss_$RAND:walk 2:    14: 100: 100% touch_frog_pow

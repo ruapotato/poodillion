@@ -169,7 +169,7 @@ def action_cd(new_xy, reset_player_pos=True):
     fps = 20
     cd_speed = 15
     while player_xy != new_xy:
-        print(f"Updateing: {player_xy} {new_xy} ")
+        #print(f"Updateing: {player_xy} {new_xy} ")
         #clear old pos
         clear_img(player_image, player_xy)
         #pygame.draw.rect(gameDisplay,(255,0,0),(player_xy[0],player_xy[1],player_image.get_width(),player_image.get_height()))
@@ -284,6 +284,7 @@ def process_NPC_line(line):
     chroot_PWD = chroot_path + PWD
     
     raw_data = line.split(":")
+    print(f"Process_NPC_line: {line}")
     #Example data
     #allegiance:star_x:start_y:when:img:name:AI <AI args>:damage:life:% drops
     # bad:  x:  y:    when:          img:             name:     AI:damage:life:    % drops
@@ -293,20 +294,34 @@ def process_NPC_line(line):
     allegiance = int(raw_data[0].strip())
     x = raw_data[1].strip()
     y = raw_data[2].strip()
-    try:
-        x = int(x)
-        y = int(y)
-        start_pos = [x,y]
-    except Exception:
-        print("Using random start for NPC")
-        start_pos = [display_width-50,int(display_height/(int(random.randint(1,200)/100)+2))]
+    #try:
+    x = int(x)
+    y = int(y)
+    start_pos = [x,y]
+    #except Exception:
+        #print("Using random start for NPC")
+        #start_pos = [display_width-50,int(display_height/(int(random.randint(1,200)/100)+2))]
     when = raw_data[3].strip()
     name = raw_data[5].strip()
     
+    life = int(raw_data[8].strip())
     respawn_data = copy.deepcopy(raw_data)
+    
+    if "$RAND" in name:
+        rand_string = ''.join(random.choices(string.ascii_uppercase + string.digits, k = 7))
+        name = name.replace("$RAND", rand_string)
+    
+    #Used for repeat spawners
+    #Correct name in file
+    spawn_line_raw = copy.deepcopy(raw_data)
+    spawn_line_raw[5] = name
+    spawn_line = ":".join(spawn_line_raw)
+    spawn_line = spawn_line.replace(when, "on_enter")
+    
     #change life:
     respawn_data[8] = "$LIFE"
     respawn_line = ":".join(respawn_data)
+    
     
     img = f"{script_path}/img/{raw_data[4].strip()}"
     npc_imges[img] = pygame.image.load(img).convert()
@@ -320,7 +335,7 @@ def process_NPC_line(line):
     
     damage = int(raw_data[7].strip())
     
-    life = int(raw_data[8].strip())
+    
     life_file = ""
     if when == "on_enter" or when == "active":
         life_file = f"{chroot_PWD}/{name}"
@@ -336,15 +351,17 @@ def process_NPC_line(line):
                         os.remove(life_file)
                         old_npc_line = ":".join(line.split(":")[1:])
                         old_npc_line = old_npc_line.replace("$LIFE", str(life))
-                        print(old_npc_line)
+                        #print(old_npc_line)
                         
                         process_NPC_line(old_npc_line)
                         
-                        print(f"Old guy: {old_npc_line}")
+                        #print(f"Old guy: {old_npc_line}")
                         return
             
         else:
             write_life_file(life_file, life, respawn_line)
+            #set_processed_files(PWD)
+            add_processed_file(life_file)
         when = "active"
     drop_raw = raw_data[9].strip().split(' ')
     #Example data
@@ -360,12 +377,14 @@ def process_NPC_line(line):
         drops = drop_raw[1]
     print(f"Setup {drops}")
     
-    
     game_actors[name] = {"when":when,
                             "img":img,
                             "name":name,
                             "AI":AI,
                             "AI_args":AI_args,
+                            "start_life": life,
+                            "respawn":respawn_line,
+                            "spawn_line":spawn_line,
                             "damage":damage,
                             "drop_chance":chance_drop,
                             "drops":drops,
@@ -376,6 +395,7 @@ def process_NPC_line(line):
 
 def load_player_spawners(PWD, load_only=False):
     global chroot_path
+    global files_processed
     chroot_PWD = chroot_path + PWD
     #If we have a spawners files load them
     try:
@@ -384,6 +404,9 @@ def load_player_spawners(PWD, load_only=False):
         files_and_dirs = []
     for file_or_dir in files_and_dirs:
         file_or_dir = chroot_PWD + "/" + file_or_dir
+        if file_or_dir in files_processed:
+            print(f"File already processed: {file_or_dir}")
+            continue
         if os.path.isfile(file_or_dir):
             #filter if load_only is set
             if load_only and load_only not in file_or_dir:
@@ -398,11 +421,12 @@ def load_player_spawners(PWD, load_only=False):
                 #active:frog_guy.png:frog*: 100% walk 3:     1:   3: 100% na
                 respawn_data = respawn.split(":")
                 #Update file name
-                respawn_data[2] = file_name.split("/")[-1]
+                #respawn_data[2] = file_name.split("/")[-1]
                 respawn = ":".join(respawn_data)
                 
                 is_friend = friendly(file_name)
                 print(f"What do you think? friend: {is_friend}")
+                print(f"Potato {load_only}")
                 print(respawn)
                 process_NPC_line(respawn)
 
@@ -425,6 +449,7 @@ def load_spawners(PWD):
                 if line.startswith("#"):
                     continue
                 if "on_enter" in line or "every" in line:
+                    print(f"Process NPC spawner: {line}")
                     process_NPC_line(line)
     load_player_spawners(PWD)
         
@@ -441,7 +466,9 @@ def draw_npc():
             img = game_actors[player_name]['img']
             img = npc_imges[img]
             name = game_actors[player_name]['life_file']
+            life = check_for_life(name)
             name = name.split("/")[-1]
+            name = f"{name}:{life}"
             name_height_offset = int((img.get_height()/2) + 15) * -1
             
             #Clear old
@@ -609,7 +636,7 @@ def update_game():
     decrement_sys_msgs()
     #Move player if needed
     if player_xy != player_target:
-        print(f"Moving player: {player_xy}")
+        #print(f"Moving player: {player_xy}")
         #clear current pos
         clear_img(player_image, player_xy)
         #pygame.draw.rect(gameDisplay,(255,255,255),(player_xy[0],player_xy[1],player_image.get_width(),player_image.get_height()))
@@ -625,6 +652,7 @@ def update_game():
     new_NPCs = {}
     
     chroot_PWD = chroot_path + PWD
+    NPC_lines_to_process = []
     for player_name in game_actors:
         status = game_actors[player_name]['when']
         drop_chance = game_actors[player_name]['drop_chance']
@@ -639,15 +667,24 @@ def update_game():
             if game_tick % start_on == 0:
                 print("Need to added active!")
                 new_npc = copy.deepcopy(game_actors[player_name])
+                spawn = new_npc['spawn_line']
+                print(f"Process respawn line: {spawn}")
+                NPC_lines_to_process.append(spawn)
+                #process_NPC_line(spawn)
+                """
+                print(f"new_npc: {new_npc}")
                 new_npc_name = new_npc['name']
                 if "$RAND" in new_npc_name:
                     rand_string = ''.join(random.choices(string.ascii_uppercase + string.digits, k = 7))
                     new_npc_name = new_npc_name.replace("$RAND", rand_string)
                 
+                #setup new life file for NPC
                 new_npc['name'] = new_npc_name
                 life_file = f"{chroot_PWD}/{new_npc_name}"
-                life_value = new_npc['life']
-                write_life_file(life_file, life_value)
+                life_value = new_npc['start_life']
+                respawn = new_npc['respawn']
+                print(f"respawn data: {respawn}")
+                write_life_file(life_file, life_value, respawn)
                 print(life_file)
                 #with open(life_file, 'w') as fh:
                 #    pass
@@ -658,6 +695,7 @@ def update_game():
 
                 #game_actors[new_npc_name] = new_npc
                 #print(game_actors)
+                """
                 
         if status == "active":
             #print("Active NPC")
@@ -673,7 +711,7 @@ def update_game():
                     #msg some string to say
                     if drops.startswith("msg"):
                         msg = drops[3:]
-                        write_sys_msg(msg, 60)
+                        write_sys_msg(msg, 65)
                     if drops.endswith("HP"):
                         life_drop = int(drops.strip("HP"))
                         change_life(life_drop)
@@ -682,12 +720,12 @@ def update_game():
                             msg = f"+{life_drop} HP"
                         else:
                             msg = f"-{life_drop} HP"
-                        write_sys_msg(msg, 20)
+                        write_sys_msg(msg, 30)
                         print(f"Player life: {player_life}")
                     if drops.startswith("unlock"):
                         short_name = drops.split("unlock")[-1]
                         msg = f"A door has Opened!\nFind your way to:\n  {current_level_base}{short_name}"
-                        write_sys_msg(msg, 45)
+                        write_sys_msg(msg, 65)
                         full_path = f"{chroot_path}{current_level_base}{short_name}"
                         print(f"Unlock: {full_path}")
                         unlock_door(full_path)
@@ -702,7 +740,7 @@ def update_game():
                             unlock_door(full_path)
                         else:
                             msg = f"Cannot unlock unknown or undiscovered path: \n  {full_path}"
-                        write_sys_msg(msg, 45)
+                        write_sys_msg(msg, 65)
 
                 #Setup needed data
                 img = game_actors[player_name]['img']
@@ -738,8 +776,9 @@ def update_game():
             AI = game_actors[player_name]['AI']
             AI_args = game_actors[player_name]['AI_args']
             if AI.startswith("msg"):
-                msg = AI_args
+                msg = f"{player_name}:\n  {AI_args}"
                 write_sys_msg(msg, 1)
+                #print(f"Writing: {msg}")
             #If this is a walk AI
             if AI.startswith("walk"):
                 #If this is a bad NPC
@@ -771,10 +810,17 @@ def update_game():
                 
             #print(pos)
     #add new NPCs outside of above eath loop
-    for new_npc_name in new_NPCs:
-        game_actors[new_npc_name] = new_NPCs[new_npc_name]
+    #print(f"Needs added: {NPC_lines_to_process}")
+    for npc_line in NPC_lines_to_process:
+        process_NPC_line(npc_line)
+    #mark files as known about
+    if NPC_lines_to_process != []:
+        set_processed_files(PWD)
+    #for new_npc_name in new_NPCs:
+        #game_actors[new_npc_name] = new_NPCs[new_npc_name]
 
 
+#get changed files and add them to files_processed
 def get_changed_files(PWD):
     global files_processed
     
@@ -792,6 +838,12 @@ def get_changed_files(PWD):
     files_processed = files_processed + needs_processed
     return(needs_processed)
 
+
+def add_processed_file(file_name):
+    global files_processed
+    files_processed.append(file_name)
+
+#Add all PWD to files_processed
 def set_processed_files(PWD):
     global files_processed
     files_processed = []
@@ -826,6 +878,7 @@ def main_interface():
     global player_speed
     global player_target
     global player_start_pos
+    global files_processed
     
     running = True
     
@@ -909,6 +962,7 @@ def main_interface():
             if not redraw_forced:
                 #player_xy = copy.deepcopy(player_start_pos)
                 #player_target = copy.deepcopy(player_start_pos)
+                files_processed = []
                 
                 short_pwd = f"./{PWD.split('/')[-1]}"
                 if short_pwd in dir_pos:
@@ -1036,7 +1090,7 @@ def main_interface():
         if click[0] == 1:
             x,y = mouse_pos
             player_target = [x,y]
-            print(player_target)
+            #print(player_target)
         #button("",sidebar_pos[0],sidebar_pos[1],20,300,lockdown_color,quit)
         
         
