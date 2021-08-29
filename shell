@@ -405,7 +405,8 @@ def load_player_spawners(PWD, load_only=False):
         files_and_dirs = []
     for file_or_dir in files_and_dirs:
         file_or_dir = chroot_PWD + "/" + file_or_dir
-        if file_or_dir in files_processed:
+        #Override by setting load_only
+        if file_or_dir in files_processed and not load_only:
             print(f"File already processed: {file_or_dir}")
             continue
         if os.path.isfile(file_or_dir):
