@@ -497,6 +497,11 @@ def did_it_happen(chance):
 def FIRE(pos, clean_up_and_display=True):
     global gameDisplay
     global player_xy
+    global laser_sound
+    
+    #Play sound
+    pygame.mixer.Sound.play(laser_sound)
+    
     fire_pos = [player_xy[0] ,player_xy[1] - 35]
     pygame.draw.line(gameDisplay, (255,0,0), (fire_pos[0], fire_pos[1]), (pos[0], pos[1]), 4)
     pygame.display.update()
@@ -893,6 +898,7 @@ def main_interface():
     global player_start_pos
     global files_processed
     global pre_game
+    global laser_sound
     
     running = True
     
@@ -911,6 +917,7 @@ def main_interface():
     redraw_forced = False
     view_tty = False
     pre_game = True
+    laser_sound = pygame.mixer.Sound(f"{script_path}/sound/laser.ogg")
     
 
     #img = pygame.image.load(image_file_to_display)
