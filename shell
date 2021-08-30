@@ -48,6 +48,7 @@ dynamic_fs_levels = {}
 init_text = "Enter your password in the pkexec window\nThen press any key to continue..."
 fps = 20
 files_processed = []
+current_song = ""
 #                   Text:Time in ticks
 #display_txt = {init_text:50}
 
@@ -437,10 +438,27 @@ def load_spawners(PWD):
     global chroot_path
     global game_actors
     global npc_imges
+    global current_song
     
     chroot_PWD = chroot_path + PWD
     possible_spawn_file = f"{chroot_PWD}/.spawner"
-    
+    possible_theme_file = f"{chroot_PWD}/.theme"
+    #If we have a theme, load it:
+    if os.path.isfile(possible_theme_file):
+        print("Found Theme file")
+        with open(possible_theme_file) as fh:
+            for line in fh.readlines():
+                if line.startswith("#"):
+                    continue
+                if line.startswith("music:"):
+                    music_to_load = line.split(":")[-1].strip()
+                    if current_song != music_to_load:
+                        #TODO play music
+                        pygame.mixer.music.load(f"{script_path}/sound/{music_to_load}")
+                        pygame.mixer.music.play(-1)
+                        current_song = music_to_load
+                        print(f"Need to load: {music_to_load}")
+
     #Clear out any old spawner data
     game_actors = {}
     
@@ -639,6 +657,7 @@ def update_game():
     global player_speed
     global player_image
     global redraw_forced
+    global hurt_sound
     
     decrement_sys_msgs()
     #Move player if needed
@@ -727,6 +746,7 @@ def update_game():
                             msg = f"+{life_drop} HP"
                         else:
                             msg = f"-{life_drop} HP"
+                            pygame.mixer.Sound.play(hurt_sound)
                         write_sys_msg(msg, 30)
                         print(f"Player life: {player_life}")
                     if drops.startswith("unlock"):
@@ -804,6 +824,10 @@ def update_game():
                     #check if we are hit
                     if abs(pos[0] - player_xy[0]) < 25 and abs(pos[1] - player_xy[1]) < 25:
                         change_life(damage * -1)
+                        
+                        #Play hit sound
+                        pygame.mixer.Sound.play(hurt_sound)
+                        
                         #player_life = player_life - damage
                         if get_player_life() <= 0:
                             #Reset
@@ -899,6 +923,7 @@ def main_interface():
     global files_processed
     global pre_game
     global laser_sound
+    global hurt_sound
     
     running = True
     
@@ -918,7 +943,7 @@ def main_interface():
     view_tty = False
     pre_game = True
     laser_sound = pygame.mixer.Sound(f"{script_path}/sound/laser.ogg")
-    
+    hurt_sound = pygame.mixer.Sound(f"{script_path}/sound/drip.ogg")
 
     #img = pygame.image.load(image_file_to_display)
     #img = pygame.transform.scale(img, (display_width, display_height))
