@@ -943,8 +943,9 @@ def main_interface():
     view_tty = False
     pre_game = True
     laser_sound = pygame.mixer.Sound(f"{script_path}/sound/laser.ogg")
+    laser_sound.set_volume(.2)
     hurt_sound = pygame.mixer.Sound(f"{script_path}/sound/drip.ogg")
-
+    hurt_sound.set_volume(1.5)
     #img = pygame.image.load(image_file_to_display)
     #img = pygame.transform.scale(img, (display_width, display_height))
     
